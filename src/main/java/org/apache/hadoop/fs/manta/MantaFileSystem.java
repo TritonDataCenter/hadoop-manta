@@ -1,5 +1,7 @@
 package org.apache.hadoop.fs.manta;
 
+import com.joyent.manta.config.ConfigContext;
+import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -17,15 +19,27 @@ import java.net.URI;
 /**
  *
  */
+@InterfaceAudience.Public
 public class MantaFileSystem extends FileSystem {
     /**
      * Logger instance.
      */
-    public static final Logger LOG = LoggerFactory.getLogger(MantaFileSystem.class);
+    public static final Logger LOG =
+            LoggerFactory.getLogger(MantaFileSystem.class);
+
+    static final String PATH_DELIMITER = Path.SEPARATOR;
+    private static final int MANTA_MAX_LISTING_LENGTH = 1000;
+
+    private URI uri;
+    private ConfigContext config;
+
+    public MantaFileSystem(final ConfigContext config) {
+        this.config = config;
+    }
 
     @Override
     public URI getUri() {
-        return null;
+        return this.uri;
     }
 
     @Override
@@ -41,8 +55,9 @@ public class MantaFileSystem extends FileSystem {
     }
 
     @Override
-    public FSDataOutputStream append(final Path path, final int i, final Progressable progressable) throws IOException {
-        return null;
+    public FSDataOutputStream append(final Path path, final int i,
+                                     final Progressable progressable) throws IOException {
+        throw new IOException("Not supported");
     }
 
     @Override
