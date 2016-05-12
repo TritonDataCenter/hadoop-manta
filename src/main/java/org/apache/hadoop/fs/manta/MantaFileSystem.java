@@ -15,10 +15,12 @@ import java.io.IOException;
 import java.net.URI;
 
 /**
- * @author Elijah Zupancic
- * @since 1.0.0
+ *
  */
 public class MantaFileSystem extends FileSystem {
+    /**
+     * Logger instance.
+     */
     public static final Logger LOG = LoggerFactory.getLogger(MantaFileSystem.class);
 
     @Override
@@ -27,39 +29,39 @@ public class MantaFileSystem extends FileSystem {
     }
 
     @Override
-    public FSDataInputStream open(Path path, int i) throws IOException {
+    public FSDataInputStream open(final Path path, final int i) throws IOException {
         return null;
     }
 
     @Override
-    public FSDataOutputStream create(Path path, FsPermission fsPermission,
-                                     boolean b, int i, short i1, long l,
-                                     Progressable progressable) throws IOException {
+    public FSDataOutputStream create(final Path path, final FsPermission fsPermission,
+                                     final boolean b, final int i, final short i1, final long l,
+                                     final Progressable progressable) throws IOException {
         return null;
     }
 
     @Override
-    public FSDataOutputStream append(Path path, int i, Progressable progressable) throws IOException {
+    public FSDataOutputStream append(final Path path, final int i, final Progressable progressable) throws IOException {
         return null;
     }
 
     @Override
-    public boolean rename(Path path, Path path1) throws IOException {
+    public boolean rename(final Path path, final Path path1) throws IOException {
         return false;
     }
 
     @Override
-    public boolean delete(Path path, boolean b) throws IOException {
+    public boolean delete(final Path path, final boolean b) throws IOException {
         return false;
     }
 
     @Override
-    public FileStatus[] listStatus(Path path) throws FileNotFoundException, IOException {
+    public FileStatus[] listStatus(final Path path) throws FileNotFoundException, IOException {
         return new FileStatus[0];
     }
 
     @Override
-    public void setWorkingDirectory(Path path) {
+    public void setWorkingDirectory(final Path path) {
 
     }
 
@@ -69,12 +71,12 @@ public class MantaFileSystem extends FileSystem {
     }
 
     @Override
-    public boolean mkdirs(Path path, FsPermission fsPermission) throws IOException {
+    public boolean mkdirs(final Path path, final FsPermission fsPermission) throws IOException {
         return false;
     }
 
     @Override
-    public FileStatus getFileStatus(Path path) throws IOException {
+    public FileStatus getFileStatus(final Path path) throws IOException {
         return null;
     }
 }

@@ -96,7 +96,7 @@
 
         <dependency>
             <groupId>com.joyent.manta</groupId>
-            <artifactId>java-manta</artifactId>
+            <artifactId>java-manta-client</artifactId>
             <version>${dependency.java-manta.version}</version>
         </dependency>
 
