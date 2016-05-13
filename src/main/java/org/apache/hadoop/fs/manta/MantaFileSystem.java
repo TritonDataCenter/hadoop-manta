@@ -37,6 +37,15 @@ public class MantaFileSystem extends FileSystem {
         this.config = config;
     }
 
+    /**
+     * Return the protocol scheme for the FileSystem.
+     *
+     * @return "manta"
+     */
+    public String getScheme() {
+        return "manta";
+    }
+
     @Override
     public URI getUri() {
         return this.uri;
@@ -44,7 +53,20 @@ public class MantaFileSystem extends FileSystem {
 
     @Override
     public FSDataInputStream open(final Path path, final int i) throws IOException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Opening '{}' for reading.", path);
+        }
+        final FileStatus fileStatus = getFileStatus(path);
+
+        if (fileStatus.isDirectory()) {
+            final String msg = String.format("Can't open %s because it is a directory", path);
+            throw new FileNotFoundException(msg);
+        }
+
         return null;
+
+//        return new FSDataInputStream(new S3AInputStream(bucket, pathToKey(f),
+//                fileStatus.getLen(), s3, statistics));
     }
 
     @Override
