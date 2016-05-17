@@ -61,7 +61,7 @@
         <dependency.checkstyle.version>6.17</dependency.checkstyle.version>
         <dependency.java-manta.version>2.4.0-SNAPSHOT</dependency.java-manta.version>
         <dependency.testng.version>6.9.9</dependency.testng.version>
-        <dependency.hadoop-common.version>2.7.2</dependency.hadoop-common.version>
+        <dependency.hadoop.version>2.7.2</dependency.hadoop.version>
 
         <!-- Plugin versions -->
         <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
@@ -90,7 +90,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>${dependency.hadoop-common.version}</version>
+            <version>${dependency.hadoop.version}</version>
             <!--<scope>provided</scope>-->
         </dependency>
 
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>${dependency.hadoop-common.version}</version>
+            <version>${dependency.hadoop.version}</version>
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
@@ -124,6 +124,26 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>1.3.0</version>
+                <executions>
+                    <execution>
+                        <id>install-hadoop-home</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>http://www-us.apache.org/dist/hadoop/common/hadoop-${dependency.hadoop.version}/hadoop-${dependency.hadoop.version}.tar.gz</url>
+                            <unpack>true</unpack>
+                            <outputDirectory>${project.build.directory}/hadoop_home</outputDirectory>
+                            <md5>c442bd89b29cab9151b5987793b94041</md5>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!--<plugin>-->
                 <!--<groupId>org.apache.maven.plugins</groupId>-->
                 <!--<artifactId>maven-checkstyle-plugin</artifactId>-->
@@ -236,6 +256,7 @@
                 <configuration>
                     <forkCount>${failsafe.forkCount}</forkCount>
                     <systemPropertyVariables>
+                        <hadoop.home.dir>${project.build.directory}/hadoop_home</hadoop.home.dir>
                     </systemPropertyVariables>
                     <useSystemClassLoader>${failsafe.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
@@ -293,6 +314,7 @@
                     <forkCount>${surefire.forkCount}</forkCount>
                     <skip>${maven.test.skip}</skip>
                     <systemPropertyVariables>
+                        <hadoop.home.dir>${project.build.directory}/hadoop_home</hadoop.home.dir>
                     </systemPropertyVariables>
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
