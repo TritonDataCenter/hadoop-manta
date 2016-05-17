@@ -212,9 +212,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     @Override
     public boolean mkdirs(final Path path, final FsPermission fsPermission) throws IOException {
         String mantaPath = mantaPath(path);
-        client.putDirectory(mantaPath, true);
-
-        return true;
+        return client.putDirectory(mantaPath);
     }
 
     @Override

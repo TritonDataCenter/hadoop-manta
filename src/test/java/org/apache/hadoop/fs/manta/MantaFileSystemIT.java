@@ -54,4 +54,12 @@ public class MantaFileSystemIT {
             }
         }
     }
+
+    @Test
+    public void canMakeDirectory() throws IOException {
+        try (MantaFileSystem fs = instance()) {
+            Path newDirectory = new Path("stor/newDirectory");
+            fs.mkdirs(newDirectory);
+        }
+    }
 }
