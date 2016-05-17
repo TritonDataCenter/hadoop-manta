@@ -59,7 +59,7 @@
         <failsafe.useSystemClassLoader>true</failsafe.useSystemClassLoader>
         <!-- Dependency versions -->
         <dependency.checkstyle.version>6.17</dependency.checkstyle.version>
-        <dependency.java-manta.version>2.3.0</dependency.java-manta.version>
+        <dependency.java-manta.version>2.4.0-SNAPSHOT</dependency.java-manta.version>
         <dependency.testng.version>6.9.9</dependency.testng.version>
         <dependency.hadoop-common.version>2.7.2</dependency.hadoop-common.version>
 
@@ -91,13 +91,19 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${dependency.hadoop-common.version}</version>
-            <scope>compile</scope>
+            <!--<scope>provided</scope>-->
         </dependency>
 
         <dependency>
             <groupId>com.joyent.manta</groupId>
             <artifactId>java-manta-client</artifactId>
             <version>${dependency.java-manta.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -107,38 +113,45 @@
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${maven-checkstyle-plugin.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.puppycrawl.tools</groupId>
-                        <artifactId>checkstyle</artifactId>
-                        <version>${dependency.checkstyle.version}</version>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <configLocation>checkstyle.xml</configLocation>
-                    <consoleOutput>true</consoleOutput>
-                    <skip>${checkstyle.skip}</skip>
-                    <suppressionsLocation>suppressions.xml</suppressionsLocation>
-                    <violationSeverity>warning</violationSeverity>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>checkstyle</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+            <!--<plugin>-->
+                <!--<groupId>org.apache.maven.plugins</groupId>-->
+                <!--<artifactId>maven-checkstyle-plugin</artifactId>-->
+                <!--<version>${maven-checkstyle-plugin.version}</version>-->
+                <!--<dependencies>-->
+                    <!--<dependency>-->
+                        <!--<groupId>com.puppycrawl.tools</groupId>-->
+                        <!--<artifactId>checkstyle</artifactId>-->
+                        <!--<version>${dependency.checkstyle.version}</version>-->
+                    <!--</dependency>-->
+                <!--</dependencies>-->
+                <!--<configuration>-->
+                    <!--<configLocation>checkstyle.xml</configLocation>-->
+                    <!--<consoleOutput>true</consoleOutput>-->
+                    <!--<skip>${checkstyle.skip}</skip>-->
+                    <!--<suppressionsLocation>suppressions.xml</suppressionsLocation>-->
+                    <!--<violationSeverity>warning</violationSeverity>-->
+                <!--</configuration>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>checkstyle</id>-->
+                        <!--<phase>validate</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>check</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
@@ -182,17 +195,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>enforce</id>
-                        <configuration>
-                            <rules>
-                                <dependencyConvergence />
-                            </rules>
-                        </configuration>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                    </execution>
-                    <execution>
                         <id>enforce-bytecode-version</id>
                         <goals>
                             <goal>enforce</goal>
@@ -214,20 +216,6 @@
                         <configuration>
                             <rules>
                                 <banCircularDependencies />
-                            </rules>
-                            <fail>true</fail>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>enforce-ban-duplicate-classes</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <banDuplicateClasses>
-                                    <findAllDuplicates>true</findAllDuplicates>
-                                </banDuplicateClasses>
                             </rules>
                             <fail>true</fail>
                         </configuration>
@@ -294,11 +282,6 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>${maven-shade-plugin.version}</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>${maven-source-plugin.version}</version>
             </plugin>
@@ -313,6 +296,30 @@
                     </systemPropertyVariables>
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+
+                <configuration>
+                    <minimizeJar>true</minimizeJar>
+                    <artifactSet>
+                        <excludes>
+                            <exclude>org.apache.hadoop:*</exclude>
+                            <exclude>org.slf4j:*</exclude>
+                            <exclude>junit:junit</exclude>
+                        </excludes>
+                    </artifactSet>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
