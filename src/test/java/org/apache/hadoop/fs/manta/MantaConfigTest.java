@@ -20,7 +20,7 @@ public class MantaConfigTest {
         URI uri = URI.create("manta:///");
         FileSystem fs = FileSystem.get(uri, config);
 
-        assertTrue(String.format("FileSystem is not an instant of %s. Actually: %s",
+        assertTrue(String.format("FileSystem is not an instance of %s. Actually: %s",
                 MantaFileSystem.class, fs.getClass()), fs instanceof MantaFileSystem);
     }
 }

@@ -1,24 +1,16 @@
 package org.apache.hadoop.fs.manta;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaHttpHeaders;
-import com.joyent.manta.client.MantaObject;
-import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.MantaSeekableByteChannel;
+import com.joyent.manta.client.*;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FSInputStream;
-import org.apache.hadoop.fs.FileAlreadyExistsException;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.slf4j.Logger;
@@ -195,6 +187,21 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     }
 
     @Override
+    protected RemoteIterator<LocatedFileStatus> listLocatedStatus(
+            final Path path, final PathFilter filter) throws FileNotFoundException, IOException {
+        LOG.debug("List located status for path: {}", path);
+
+        String mantaPath = mantaPath(path);
+
+        if (!client.existsAndIsAccessible(mantaPath)) {
+            throw new FileNotFoundException(mantaPath);
+        }
+
+        MantaDirectoryListingIterator itr = client.streamingIterator(mantaPath);
+        return new MantaRemoteIterator(filter, itr, path, this, true);
+    }
+
+    @Override
     public void setWorkingDirectory(final Path path) {
         this.workingDir = path;
     }
@@ -222,6 +229,31 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         MantaObjectResponse response = client.head(mantaPath);
         return new MantaFileStatus(response, path);
+    }
+
+    @Override
+    public boolean exists(final Path path) throws IOException {
+        return client.existsAndIsAccessible(mantaPath(path));
+    }
+
+    @Override
+    public boolean isDirectory(final Path path) throws IOException {
+        try {
+            return client.head(mantaPath(path)).isDirectory();
+        } catch (MantaClientHttpResponseException e) {
+            /* We imitate the behavior of FileSystem.isDirectory, by changing a
+             * FileNotFoundException into a false return value. */
+            if (e.getServerCode().equals(MantaErrorCode.RESOURCE_NOT_FOUND_ERROR)) {
+                return false;
+            }
+
+            throw e;
+        }
+    }
+
+    @Override
+    public boolean isFile(final Path path) throws IOException {
+        return !isDirectory(path);
     }
 
     @Override

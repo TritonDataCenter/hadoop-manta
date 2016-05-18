@@ -62,4 +62,11 @@ public class MantaFileSystemIT {
             fs.mkdirs(newDirectory);
         }
     }
+
+    @Test
+    public void isFile() throws IOException {
+        try (MantaFileSystem fs = instance()) {
+            fs.isFile(new Path("stor/hello.txt"));
+        }
+    }
 }
