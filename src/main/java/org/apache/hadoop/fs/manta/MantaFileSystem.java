@@ -284,4 +284,14 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         throw new IllegalArgumentException(String.format("Invalid path: %s", path));
     }
+
+    @VisibleForTesting
+    MantaClient getMantaClient() {
+        return this.client;
+    }
+
+    @VisibleForTesting
+    ConfigContext getConfig() {
+        return this.config;
+    }
 }

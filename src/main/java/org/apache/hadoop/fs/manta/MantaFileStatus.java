@@ -3,10 +3,7 @@ package org.apache.hadoop.fs.manta;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.joyent.manta.client.MantaObject;
-import org.apache.commons.httpclient.util.DateParseException;
-import org.apache.commons.httpclient.util.DateUtil;
-import org.apache.commons.lang.time.DateFormatUtils;
-import org.apache.commons.lang.time.DateUtils;
+import com.joyent.manta.client.MantaObjectResponse;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -28,9 +25,8 @@ public class MantaFileStatus extends FileStatus {
     private static final long UNKNOWN_MOD_TIME = 0L;
     private static final long UNKNOWN_LENGTH = 1L;
     private static final short UNKNOWN_REPLICATION_FACTOR = 1;
-    private static final String ISO_8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSX";
     private static final DateFormat TIMESTAMP_PARSER =
-            new SimpleDateFormat(ISO_8601_FORMAT);
+            new SimpleDateFormat(MantaObjectResponse.PATTERN_ISO_8601);
 
     public MantaFileStatus(final MantaObject mantaObject) {
         this(mantaObject, new Path(mantaObject.getPath()));
@@ -125,7 +121,7 @@ public class MantaFileStatus extends FileStatus {
             return date.getTime();
         } catch (ParseException e) {
             String msg = String.format("Unable to parse modification time [%s] "
-                    + "with pattern [%s]", mtime, ISO_8601_FORMAT);
+                    + "with pattern [%s]", mtime, MantaObjectResponse.PATTERN_ISO_8601);
             LOG.warn(msg, e);
             return UNKNOWN_MOD_TIME;
         }
