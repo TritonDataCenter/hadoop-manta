@@ -120,21 +120,20 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
             throw new FileAlreadyExistsException(msg);
         }
 
-        try (PipedOutputStream out = new PipedOutputStream();
-             PipedInputStream in = new PipedInputStream(out);
-             ProgressingOutputStream pout = new ProgressingOutputStream(progressable, out)) {
+        PipedOutputStream out = new PipedOutputStream();
+        PipedInputStream in = new PipedInputStream(out);
+        ProgressingOutputStream pout = new ProgressingOutputStream(progressable, out);
 
-            MantaHttpHeaders headers = new MantaHttpHeaders();
+        MantaHttpHeaders headers = new MantaHttpHeaders();
 
-            if (replication > 0) {
-                headers.setDurabilityLevel(replication);
-            }
-
-            LOG.debug("Creating new file with {} replicas at path: {}", replication, path);
-
-            client.put(mantaPath, in, headers);
-            return new FSDataOutputStream(pout, statistics);
+        if (replication > 0) {
+            headers.setDurabilityLevel(replication);
         }
+
+        LOG.debug("Creating new file with {} replicas at path: {}", replication, path);
+
+        client.put(mantaPath, in, headers);
+        return new FSDataOutputStream(pout, statistics);
     }
 
     @Override
@@ -145,16 +144,8 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
     @Override
     public boolean rename(final Path original, final Path newName) throws IOException {
-        String mantaOriginal = mantaPath(original);
-        String mantaNewName = mantaPath(newName);
-
-        client.head(mantaOriginal);
-
-        LOG.debug("Renaming [{}] to [{}]", original, newName);
-
-        client.move(mantaOriginal, mantaNewName);
-
-        return true;
+        // We alias the semantics for moving a object and expose it as rename
+        return move(original, newName);
     }
 
     @Override
@@ -263,6 +254,28 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         } finally {
             client.closeQuietly();
         }
+    }
+
+    /**
+     * Moves an object from one path to another.
+     * @param original path to move from
+     * @param newName path to move to
+     * @return true if moved successfully
+     * @throws IOException thrown when we can't move paths
+     */
+    public boolean move(final Path original, final Path newName) throws IOException {
+        String source = mantaPath(original);
+        String destination = mantaPath(newName);
+
+        if (!client.existsAndIsAccessible(source)) {
+            throw new FileNotFoundException(source);
+        }
+
+        LOG.debug("Moving [{}] to [{}]", original, newName);
+
+        client.move(source, destination);
+
+        return client.existsAndIsAccessible(destination);
     }
 
     private String mantaPath(final Path path) {

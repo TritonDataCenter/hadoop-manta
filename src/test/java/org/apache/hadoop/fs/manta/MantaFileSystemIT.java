@@ -2,44 +2,70 @@ package org.apache.hadoop.fs.manta;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.config.ConfigContext;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class MantaFileSystemIT {
-    private String testPathPrefix;
-    private MantaFileSystem fs;
-    private MantaClient client;
-    private ConfigContext config;
+    private static final String TEST_DATA = "DATA GRAVITY CREATES DATA BLACK HOLES";
 
-    @Before
-    public void setup() throws IOException {
-        this.fs = instance();
-        this.client = this.fs.getMantaClient();
-        this.config = this.fs.getConfig();
+    private static String basePath;
+    private static MantaFileSystem fs;
+    private static MantaClient client;
+    private static ConfigContext config;
+    private static String testPathPrefix;
 
-        testPathPrefix = String.format("%s/stor/%s/",
+    @BeforeClass
+    public static void setup() throws IOException {
+        fs = instance();
+        client = fs.getMantaClient();
+        config = fs.getConfig();
+
+        basePath = String.format("%s/stor/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
-        client.putDirectory(testPathPrefix);
+        client.putDirectory(basePath);
     }
 
-    @After
-    public void cleanup() throws IOException {
+    @AfterClass
+    public static void cleanup() throws IOException {
         if (client != null) {
-            client.deleteRecursive(testPathPrefix);
-            client.closeQuietly();
+            client.deleteRecursive(basePath);
+            client = null;
         }
+
+        config = null;
+        fs.close();
+    }
+
+    @Before
+    public void before() throws IOException {
+        testPathPrefix = String.format("%s%s/",
+                basePath, UUID.randomUUID());
+        client.putDirectory(testPathPrefix);
     }
 
     private static MantaFileSystem instance() {
@@ -57,37 +83,172 @@ public class MantaFileSystemIT {
         }
     }
 
+    private static boolean containsFile(final List<? extends FileStatus> list,
+                                        final String path) {
+        Path comparePath = new Path(FilenameUtils.normalize(path));
+
+        for (FileStatus status : list) {
+            if (status.getPath().equals(comparePath) && !status.isDirectory()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean containsDir(final List<? extends FileStatus> list,
+                                       final String path) {
+        Path comparePath = new Path(FilenameUtils.normalize(path));
+
+        for (FileStatus status : list) {
+            if (status.getPath().equals(comparePath) && status.isDirectory()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @Test
     public void canListStatus() throws IOException {
+        client.putDirectory(testPathPrefix + "dir-1");
+        client.putDirectory(testPathPrefix + "dir-2");
+        client.putDirectory(testPathPrefix + "dir-3");
+        client.put(testPathPrefix + "file1.txt", TEST_DATA);
+        client.put(testPathPrefix + "file2.txt", TEST_DATA);
+        client.put(testPathPrefix + "file3.txt", TEST_DATA);
 
-        Path path = new Path("stor");
-        FileStatus[] statuses = fs.listStatus(path);
+        Path path = new Path(testPathPrefix);
+        List<FileStatus> results = Arrays.asList(fs.listStatus(path));
 
-        for (FileStatus status : statuses) {
-            System.out.println(status);
-        }
+        assertEquals("Mismatch between size of results and entries added",
+                6, results.size());
+
+        assertTrue("File doesn't exist: " + testPathPrefix + "file1.txt",
+                containsFile(results, testPathPrefix + "file1.txt"));
+        assertTrue("File doesn't exist: " + testPathPrefix + "file2.txt",
+                containsFile(results, testPathPrefix + "file2.txt"));
+        assertTrue("File doesn't exist: " + testPathPrefix + "file3.txt",
+                containsFile(results, testPathPrefix + "file3.txt"));
+
+        assertTrue("Directory doesn't exist: " + testPathPrefix + "dir-1",
+                containsDir(results, testPathPrefix + "dir-1"));
+        assertTrue("Directory doesn't exist: " + testPathPrefix + "dir-2",
+                containsDir(results, testPathPrefix + "dir-2"));
+        assertTrue("Directory doesn't exist: " + testPathPrefix + "dir-3",
+                containsDir(results, testPathPrefix + "dir-3"));
     }
 
     @Test
     public void canListMantaDirectory() throws IOException {
-        Path path = new Path("/elijah.zupancic/stor/");
+        client.putDirectory(testPathPrefix + "dir-1");
+        client.putDirectory(testPathPrefix + "dir-2");
+        client.putDirectory(testPathPrefix + "dir-3");
+        client.put(testPathPrefix + "file1.txt", TEST_DATA);
+        client.put(testPathPrefix + "file2.txt", TEST_DATA);
+        client.put(testPathPrefix + "file3.txt", TEST_DATA);
+
+        Path path = new Path(testPathPrefix);
         RemoteIterator<LocatedFileStatus> itr = fs.listFiles(path, false);
+        List<LocatedFileStatus> results = new ArrayList<>(6);
 
         while (itr.hasNext()) {
-            LocatedFileStatus next = itr.next();
-
-            System.out.println(next);
+            results.add(itr.next());
         }
+
+        assertEquals("Mismatch between size of results and files added",
+                3, results.size());
+
+        assertTrue("File doesn't exist: " + testPathPrefix + "file1.txt",
+                containsFile(results, testPathPrefix + "file1.txt"));
+        assertTrue("File doesn't exist: " + testPathPrefix + "file2.txt",
+                containsFile(results, testPathPrefix + "file2.txt"));
+        assertTrue("File doesn't exist: " + testPathPrefix + "file3.txt",
+                containsFile(results, testPathPrefix + "file3.txt"));
+
+        assertFalse("Directory returned in file results: " + testPathPrefix + "dir-1",
+                containsDir(results, testPathPrefix + "dir-1"));
+        assertFalse("Directory returned in file results: " + testPathPrefix + "dir-2",
+                containsDir(results, testPathPrefix + "dir-2"));
+        assertFalse("Directory returned in file results: " + testPathPrefix + "dir-3",
+                containsDir(results, testPathPrefix + "dir-3"));
     }
 
     @Test
     public void canMakeDirectory() throws IOException {
-        Path newDirectory = new Path("stor/newDirectory");
-        fs.mkdirs(newDirectory);
+        Path newDirectory = new Path(testPathPrefix + "newDirectory-"  + UUID.randomUUID());
+        boolean result = fs.mkdirs(newDirectory);
+
+        assertTrue("Directory not indicated as created", result);
+        boolean exists = client.existsAndIsAccessible(newDirectory.toString());
+        assertTrue("Directory doesn't exist on Manta", exists);
     }
 
     @Test
-    public void isFile() throws IOException {
-        fs.isFile(new Path("stor/hello.txt"));
+    public void canDetermineIfDirectory() throws IOException {
+        Path dir = new Path(testPathPrefix + "newDirectory-" + UUID.randomUUID());
+        boolean added = client.putDirectory(dir.toString());
+        assertTrue("Directory not indicated as created", added);
+
+        boolean result = fs.isDirectory(dir);
+        assertTrue("Directory not read as directory", result);
     }
+
+    @Test
+    public void canDetermineIfFile() throws IOException {
+        Path file = new Path(testPathPrefix + "file-" + UUID.randomUUID() + ".txt");
+        client.put(file.toString(), TEST_DATA);
+        assertTrue("File wasn't added to Manta",
+                client.existsAndIsAccessible(file.toString()));
+        boolean result = fs.isFile(file);
+        assertTrue("File not read as file", result);
+    }
+
+    @Test
+    public void canReadWholeFileAsStream() throws IOException {
+        Path file = new Path(testPathPrefix + "read-" + UUID.randomUUID() + ".txt");
+        client.put(file.toString(), TEST_DATA);
+
+        try (FSDataInputStream in = fs.open(file)) {
+            String actual = IOUtils.toString(in, Charsets.UTF_8);
+            assertEquals("Contents didn't match", TEST_DATA, actual);
+        }
+    }
+
+//    @Test
+    public void canAddFile() throws IOException {
+        Path file = new Path(testPathPrefix + "upload-" + UUID.randomUUID() + ".txt");
+        try (FSDataOutputStream out = fs.create(file)) {
+            out.writeUTF(TEST_DATA);
+        }
+
+        boolean exists = client.existsAndIsAccessible(file.toString());
+        assertTrue("File didn't get uploaded to path: " + file,
+                exists);
+
+        String actual = client.getAsString(file.toString());
+        assertEquals("Uploaded contents didn't match", TEST_DATA, actual);
+    }
+
+    @Test
+    public void canRenameFile() throws IOException {
+        Path file1 = new Path(testPathPrefix + "original-" + UUID.randomUUID() + ".txt");
+        Path file2 = new Path(testPathPrefix + "renamed-" + UUID.randomUUID() + ".txt");
+
+        client.put(file1.toString(), TEST_DATA);
+        assertTrue("Test file not uploaded",
+                client.existsAndIsAccessible(file1.toString()));
+
+        boolean renamed = fs.rename(file1, file2);
+        assertTrue("File was indicated as not renamed successfully",
+                renamed);
+
+        assertFalse("Original file still exists",
+                client.existsAndIsAccessible(file1.toString()));
+        assertTrue("Renamed file is not available",
+                client.existsAndIsAccessible(file2.toString()));
+        String actual = client.getAsString(file2.toString());
+        assertEquals("File contents do not match", TEST_DATA, actual);
+    }
+
 }

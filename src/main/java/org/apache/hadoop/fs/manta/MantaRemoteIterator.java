@@ -1,7 +1,13 @@
 package org.apache.hadoop.fs.manta;
 
 import com.joyent.manta.client.MantaDirectoryListingIterator;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.BlockLocation;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.fs.RemoteIterator;
 
 import java.io.IOException;
 import java.util.Map;
@@ -13,7 +19,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * so that we can stream directory listing results without buffering beyond the each HTTP
  * request to Manta.
  */
-public class MantaRemoteIterator implements RemoteIterator<LocatedFileStatus>, AutoCloseable {
+public class MantaRemoteIterator implements RemoteIterator<LocatedFileStatus>,
+        AutoCloseable {
     /**
      * Filter instance that determines if an entry is returned.
      */
