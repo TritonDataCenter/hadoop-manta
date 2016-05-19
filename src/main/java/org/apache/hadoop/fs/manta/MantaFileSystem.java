@@ -152,15 +152,29 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     public boolean delete(final Path path, final boolean recursive) throws IOException {
         String mantaPath = mantaPath(path);
 
-        if (recursive) {
-            LOG.debug("Recursively deleting path: {}");
-            client.delete(mantaPath);
-        } else {
-            LOG.debug("Deleting path: {}");
-            client.deleteRecursive(mantaPath);
+        // We don't bother deleting something that doesn't exist
+
+        final MantaObjectResponse head;
+
+        try {
+             head = client.head(mantaPath);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                return false;
+            }
+
+            throw e;
         }
 
-        return true;
+        if (recursive && head.isDirectory()) {
+            LOG.debug("Recursively deleting path: {}", mantaPath);
+            client.deleteRecursive(mantaPath);
+        } else {
+            LOG.debug("Deleting path: {}", mantaPath);
+            client.delete(mantaPath);
+        }
+
+        return !client.existsAndIsAccessible(mantaPath);
     }
 
     @Override

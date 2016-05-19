@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -251,4 +252,85 @@ public class MantaFileSystemIT {
         assertEquals("File contents do not match", TEST_DATA, actual);
     }
 
+    @Test
+    public void canRenameDirectory() throws IOException {
+        Path dir1 = new Path(testPathPrefix + "original-" + UUID.randomUUID());
+        Path dir2 = new Path(testPathPrefix + "renamed-" + UUID.randomUUID());
+
+        client.putDirectory(dir1.toString());
+        client.put(dir1 + "/file-1.txt", TEST_DATA);
+
+        assertTrue("Test directory not created",
+                client.existsAndIsAccessible(dir1.toString()));
+
+        boolean renamed = fs.rename(dir1, dir2);
+        assertTrue("Directory was indicated as not renamed successfully",
+                renamed);
+
+        assertFalse("Original directory still exists",
+                client.existsAndIsAccessible(dir1.toString()));
+        assertTrue("Renamed directory is not available",
+                client.existsAndIsAccessible(dir2.toString()));
+
+        assertTrue("File in directory was not preserved",
+                client.existsAndIsAccessible(dir2.toString() + "/file-1.txt"));
+    }
+
+    @Test
+    public void canDeleteFile() throws IOException {
+        Path file = new Path(testPathPrefix + "delete-me-" + UUID.randomUUID() + ".txt");
+        client.put(file.toString(), TEST_DATA);
+        Assert.assertTrue("Test file not uploaded",
+                client.existsAndIsAccessible(file.toString()));
+
+        boolean result = fs.delete(file, false);
+        Assert.assertTrue("File should be indicated as deleted", result);
+
+        Assert.assertFalse("File not actually deleted",
+                client.existsAndIsAccessible(file.toString()));
+    }
+
+    @Test
+    public void canHandleDeletingNonexistentFile() throws IOException {
+        Path file = new Path(testPathPrefix + "delete-me-" + UUID.randomUUID() + ".txt");
+
+        Assert.assertFalse("Test file exists",
+                client.existsAndIsAccessible(file.toString()));
+
+        boolean result = fs.delete(file, false);
+        Assert.assertFalse("File shouldn't be indicated as deleted", result);
+
+        Assert.assertFalse("File didn't get created",
+                client.existsAndIsAccessible(file.toString()));
+    }
+
+    @Test
+    public void canDeleteEmptyDirectory() throws IOException {
+        Path dir = new Path(testPathPrefix + "delete-me-" + UUID.randomUUID());
+        client.putDirectory(dir.toString());
+        Assert.assertTrue("Test directory not created",
+                client.existsAndIsAccessible(dir.toString()));
+
+        boolean result = fs.delete(dir, false);
+        Assert.assertTrue("Directory should be indicated as deleted", result);
+
+        Assert.assertFalse("Directory not actually deleted",
+                client.existsAndIsAccessible(dir.toString()));
+    }
+
+    @Test
+    public void canDeleteDirectoryRecursively() throws IOException {
+        Path dir = new Path(testPathPrefix + "delete-me-" + UUID.randomUUID());
+        client.putDirectory(dir.toString());
+        client.put(dir.toString() + "/file-1.txt", TEST_DATA);
+
+        Assert.assertTrue("Test directory not created",
+                client.existsAndIsAccessible(dir.toString()));
+
+        boolean result = fs.delete(dir, true);
+        Assert.assertTrue("Directory should be indicated as deleted", result);
+
+        Assert.assertFalse("Directory not actually deleted",
+                client.existsAndIsAccessible(dir.toString()));
+    }
 }
