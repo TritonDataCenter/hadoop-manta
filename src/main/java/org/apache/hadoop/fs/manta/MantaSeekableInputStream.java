@@ -42,11 +42,11 @@ public class MantaSeekableInputStream extends FSInputStream {
             return;
         }
 
-    /* If we are currently at position zero (we haven't read any data),
-     * then it is more efficient to reposition than to skip on the backing
-     * InputStream. Or, if the new position is behind the current position,
-     * then we reposition because we can't skip backwards.
-     */
+        /* If we are currently at position zero (we haven't read any data),
+         * then it is more efficient to reposition than to skip on the backing
+         * InputStream. Or, if the new position is behind the current position,
+         * then we reposition because we can't skip backwards.
+         */
         if (currentPos < 1 || currentPos > newPos) {
             reposition(newPos);
             return;
@@ -54,16 +54,16 @@ public class MantaSeekableInputStream extends FSInputStream {
 
         final long skipAheadBytes = newPos - currentPos;
 
-    /* If the new position is sufficiently far away from the current position
-     * we reposition rather than skip forwards.
-     */
+        /* If the new position is sufficiently far away from the current position
+         * we reposition rather than skip forwards.
+         */
         if (skipAheadBytes >= REPOSITION_TOLERENCE) {
             reposition(newPos);
             return;
         }
 
-    /* If we are within all of the thresholds, we just skip through the
-     * backing InputStream. */
+        /* If we are within all of the thresholds, we just skip through the
+         * backing InputStream. */
         skip(skipAheadBytes);
     }
 

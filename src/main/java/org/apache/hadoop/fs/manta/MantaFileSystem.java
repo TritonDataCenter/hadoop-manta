@@ -271,6 +271,35 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     }
 
     @Override
+    public boolean truncate(final Path path, final long newLength) throws IOException {
+        final String mantaPath = mantaPath(path);
+
+        final String contentType;
+
+        try {
+            MantaObject head = client.head(mantaPath);
+            contentType = head.getContentType();
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                throw new FileNotFoundException(mantaPath);
+            }
+
+            throw e;
+        }
+
+        if (newLength == 0) {
+            MantaHttpHeaders headers = new MantaHttpHeaders()
+                    .setContentType(contentType);
+
+            client.put(mantaPath, "", headers, null);
+            return true;
+        }
+
+        throw new UnsupportedOperationException("Truncating to an arbitrary length higher "
+                + "than zero is not supported at this time");
+    }
+
+    @Override
     public void close() throws IOException {
         try {
             super.close();

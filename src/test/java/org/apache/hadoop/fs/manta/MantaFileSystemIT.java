@@ -1,6 +1,8 @@
 package org.apache.hadoop.fs.manta;
 
 import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaHttpHeaders;
+import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FilenameUtils;
@@ -332,5 +334,38 @@ public class MantaFileSystemIT {
 
         Assert.assertFalse("Directory not actually deleted",
                 client.existsAndIsAccessible(dir.toString()));
+    }
+
+    @Test
+    public void canTruncateFileToZeroBytes() throws IOException {
+        Path file = new Path(testPathPrefix + "truncate-" + UUID.randomUUID() + ".txt");
+        MantaHttpHeaders headers = new MantaHttpHeaders()
+                .setContentType("text/plain");
+        client.put(file.toString(), TEST_DATA, headers);
+        MantaObject head = client.head(file.toString());
+        String contentType = head.getContentType();
+
+        Assert.assertEquals("Size of test file not as expected",
+                TEST_DATA.length(), head.getContentLength().intValue());
+
+        boolean result = fs.truncate(file, 0);
+        Assert.assertTrue("File wasn't indicated as truncated", result);
+
+        MantaObject verify = client.head(file.toString());
+
+        Assert.assertEquals("File wasn't truncated to zero bytes",
+                0L, verify.getContentLength().longValue());
+
+        Assert.assertEquals("Content type wasn't preserved",
+                contentType, verify.getContentType());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void cantTruncateFileOverZeroBytesYet() throws IOException {
+        Path file = new Path(testPathPrefix + "truncate-" + UUID.randomUUID() + ".txt");
+        MantaHttpHeaders headers = new MantaHttpHeaders()
+                .setContentType("text/plain");
+        client.put(file.toString(), TEST_DATA, headers);
+        fs.truncate(file, 100);
     }
 }
