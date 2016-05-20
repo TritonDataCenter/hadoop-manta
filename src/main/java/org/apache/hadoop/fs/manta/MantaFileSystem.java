@@ -1,12 +1,7 @@
 package org.apache.hadoop.fs.manta;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaDirectoryListingIterator;
-import com.joyent.manta.client.MantaHttpHeaders;
-import com.joyent.manta.client.MantaObject;
-import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.MantaSeekableByteChannel;
+import com.joyent.manta.client.*;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
@@ -133,10 +128,6 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
             throw new FileAlreadyExistsException(msg);
         }
 
-        PipedOutputStream out = new PipedOutputStream();
-        PipedInputStream in = new PipedInputStream(out);
-        ProgressingOutputStream pout = new ProgressingOutputStream(progressable, out);
-
         MantaHttpHeaders headers = new MantaHttpHeaders();
 
         if (replication > 0) {
@@ -145,8 +136,8 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         LOG.debug("Creating new file with {} replicas at path: {}", replication, path);
 
-        client.put(mantaPath, in, headers);
-        return new FSDataOutputStream(pout, statistics);
+        MantaObjectOutputStream out = client.putAsOutputStream(mantaPath, headers);
+        return new FSDataOutputStream(out, statistics);
     }
 
     @Override

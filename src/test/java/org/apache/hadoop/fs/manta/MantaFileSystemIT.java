@@ -216,11 +216,11 @@ public class MantaFileSystemIT {
         }
     }
 
-//    @Test
+    @Test
     public void canAddFile() throws IOException {
         Path file = new Path(testPathPrefix + "upload-" + UUID.randomUUID() + ".txt");
         try (FSDataOutputStream out = fs.create(file)) {
-            out.writeUTF(TEST_DATA);
+            out.write(TEST_DATA.getBytes(Charsets.UTF_8));
         }
 
         boolean exists = client.existsAndIsAccessible(file.toString());
