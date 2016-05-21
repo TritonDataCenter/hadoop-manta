@@ -1,7 +1,13 @@
 package org.apache.hadoop.fs.manta;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.joyent.manta.client.*;
+import com.joyent.manta.client.MantaClient;
+import com.joyent.manta.client.MantaDirectoryListingIterator;
+import com.joyent.manta.client.MantaHttpHeaders;
+import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaObjectOutputStream;
+import com.joyent.manta.client.MantaObjectResponse;
+import com.joyent.manta.client.MantaSeekableByteChannel;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
@@ -26,8 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.URI;
 import java.util.function.Function;
 
@@ -74,9 +78,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         this.config = chained;
         this.client = new MantaClient(this.config);
-
-        this.uri = URI.create(String.format("%s%s",
-                name.getScheme(), name.getAuthority()));
+        this.uri = URI.create("manta:///");
 
         this.workingDir = getInitialWorkingDirectory();
     }
@@ -93,6 +95,16 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     @Override
     public URI getUri() {
         return this.uri;
+    }
+
+    /**
+     * Make sure that a path specifies a FileSystem.
+     *
+     * @param path to use
+     */
+    @Override
+    public Path makeQualified(Path path) {
+        return super.makeQualified(path);
     }
 
     @Override
@@ -241,8 +253,21 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         String mantaPath = mantaPath(path);
         LOG.debug("Getting path status for: {}", mantaPath);
 
-        MantaObjectResponse response = client.head(mantaPath);
-        return new MantaFileStatus(response, path);
+        final MantaObjectResponse response;
+
+        try {
+            response = client.head(mantaPath);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 404) {
+                throw new FileNotFoundException(mantaPath);
+            }
+
+            throw e;
+        }
+
+        MantaFileStatus status = new MantaFileStatus(response, path);
+
+        return status;
     }
 
     @Override
@@ -331,23 +356,21 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     }
 
     private String mantaPath(final Path path) {
-        if (path.getParent() == null) {
-            return path.toString();
-        }
+        final String mantaPath;
 
-        if (path.getParent().equals(HOME_ALIAS_PATH)) {
+        if (path.getParent() == null) {
+            mantaPath = path.toString();
+        } else if (path.getParent().equals(HOME_ALIAS_PATH)) {
             String base = StringUtils.removeStart(path.toString().substring(2), "/");
 
-            return String.format("%s/%s", config.getMantaHomeDirectory(), base);
+            mantaPath = String.format("%s/%s", config.getMantaHomeDirectory(), base);
+        } else if (getWorkingDirectory() != null) {
+            mantaPath = new Path(getWorkingDirectory(), path).toString();
+        } else {
+            throw new IllegalArgumentException(String.format("Invalid path: %s", path));
         }
 
-        final Path working = getWorkingDirectory();
-
-        if (working != null) {
-            return new Path(working, path).toString();
-        }
-
-        throw new IllegalArgumentException(String.format("Invalid path: %s", path));
+        return StringUtils.removeStart(mantaPath, "manta:");
     }
 
     @VisibleForTesting
