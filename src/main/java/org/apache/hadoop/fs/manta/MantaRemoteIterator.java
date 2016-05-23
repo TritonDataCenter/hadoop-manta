@@ -52,6 +52,16 @@ public class MantaRemoteIterator implements RemoteIterator<LocatedFileStatus>,
      */
     private final boolean autocloseWhenFinished;
 
+    /**
+     * Creates a new instance wrapping a {@link MantaDirectoryListingIterator}.
+     *
+     * @param filter filter object that will filter out results
+     * @param inner backing iterator
+     * @param path base path that is being iterated
+     * @param fs reference to the underlying filesystem
+     * @param autocloseWhenFinished flag indicate whether or not to close all
+     *                              resources when we have finished iterating
+     */
     public MantaRemoteIterator(final PathFilter filter,
                                final MantaDirectoryListingIterator inner,
                                final Path path,
@@ -129,12 +139,12 @@ public class MantaRemoteIterator implements RemoteIterator<LocatedFileStatus>,
             }
 
             value = inner.next();
-            Path path = findPath(value);
+            final Path nextPath = findPath(value);
 
-            if (filter == null || filter.accept(path)) {
+            if (filter == null || filter.accept(nextPath)) {
                 /* I hate side-effects, but this is doing a nice micro-optimization
                  * so that we don't have to recreate the Path object twice. */
-                value.put("path", path);
+                value.put("path", nextPath);
                 return value;
             }
         }

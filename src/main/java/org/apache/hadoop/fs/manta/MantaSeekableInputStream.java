@@ -19,7 +19,7 @@ public class MantaSeekableInputStream extends FSInputStream {
     /**
      * Constant for when we reposition vs just seek ahead.
      */
-    private static long REPOSITION_TOLERENCE = 1_048_576L;
+    private static final long REPOSITION_TOLERANCE = 1_048_576L;
 
     /**
      * Logger instance.
@@ -27,8 +27,17 @@ public class MantaSeekableInputStream extends FSInputStream {
     public static final Logger LOG =
             LoggerFactory.getLogger(MantaSeekableByteChannel.class);
 
+    /**
+     * Backing {@link java.nio.channels.SeekableByteChannel} implementation.
+     */
     private volatile MantaSeekableByteChannel seekableByteChannel;
 
+    /**
+     * Create a new instance that is backed by a Manta {@link java.nio.channels.SeekableByteChannel}
+     * implementation.
+     *
+     * @param seekableByteChannel seekable byte channel used for random reads
+     */
     public MantaSeekableInputStream(final MantaSeekableByteChannel seekableByteChannel) {
         this.seekableByteChannel = seekableByteChannel;
     }
@@ -57,7 +66,7 @@ public class MantaSeekableInputStream extends FSInputStream {
         /* If the new position is sufficiently far away from the current position
          * we reposition rather than skip forwards.
          */
-        if (skipAheadBytes >= REPOSITION_TOLERENCE) {
+        if (skipAheadBytes >= REPOSITION_TOLERANCE) {
             reposition(newPos);
             return;
         }
@@ -77,7 +86,7 @@ public class MantaSeekableInputStream extends FSInputStream {
     private void reposition(final long position) throws IOException {
         try {
             seekableByteChannel.close();
-        } catch (IOException e){
+        } catch (IOException e) {
             LOG.warn("Error closing MantaSeekableByteChannel", e);
         }
 
@@ -105,7 +114,7 @@ public class MantaSeekableInputStream extends FSInputStream {
     }
 
     @Override
-    public int read(final byte[] b, int off, int len) throws IOException {
+    public int read(final byte[] b, final int off, final int len) throws IOException {
         return this.seekableByteChannel.read(b, off, len);
     }
 
@@ -136,7 +145,8 @@ public class MantaSeekableInputStream extends FSInputStream {
     }
 
     @Override
-    public synchronized int read(long position, byte[] buffer, int offset, int length) throws IOException {
+    public synchronized int read(final long position, final byte[] buffer,
+                                 final int offset, final int length) throws IOException {
         long oldPos = getPos();
         int nread = -1;
         try {

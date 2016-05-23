@@ -21,22 +21,22 @@ public class ProgressingOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(final int b) throws IOException {
+    public void write(final int buff) throws IOException {
         if (operationCount == 0L || ++operationCount % pingOnNoOfOps == 0L) {
             this.progress.progress();
         }
 
-        wrapped.write(b);
+        wrapped.write(buff);
     }
 
     @Override
-    public void write(final byte[] b) throws IOException {
-        wrapped.write(b);
+    public void write(final byte[] buff) throws IOException {
+        wrapped.write(buff);
     }
 
     @Override
-    public void write(byte[] b, final int off, final int len) throws IOException {
-        wrapped.write(b, off, len);
+    public void write(final byte[] buff, final int off, final int len) throws IOException {
+        wrapped.write(buff, off, len);
     }
 
     @Override

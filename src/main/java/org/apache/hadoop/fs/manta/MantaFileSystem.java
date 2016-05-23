@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,9 @@ import java.net.URI;
 import java.util.function.Function;
 
 /**
- *
+ * This class is a <a href="https://github.com/joyent/manta">Manta object store</a>
+ * remote file system implementation for Hadoop. It allows you to stream files
+ * directly from a Manta object store.
  */
 @InterfaceAudience.Public
 public class MantaFileSystem extends FileSystem implements AutoCloseable {
@@ -46,27 +49,68 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     public static final Logger LOG =
             LoggerFactory.getLogger(MantaFileSystem.class);
 
+    /**
+     * Alias for the home directory in Manta.
+     */
     public static final Path HOME_ALIAS_PATH = new Path("~~");
 
-    private Path workingDir;
-    private URI uri;
+    /**
+     * The root Manta URI used to identify the filesystem.
+     */
+    private static final URI ROOT_MANTA_URI = URI.create("manta:///");
+
+    /**
+     * Path to the current working directory.
+     */
+    private volatile Path workingDir;
+
+    /**
+     * Manta SDK configuration object.
+     */
     private ConfigContext config;
+
+    /**
+     * Manta client.
+     */
     private MantaClient client;
 
     static {
+        /* Log class load in order to provide debugging information to
+         * users that are attempting to embed the library.
+         */
         LOG.debug("Manta filesystem class loaded");
     }
 
+    /**
+     * Create a new instance.
+     */
     public MantaFileSystem() {
         super();
     }
 
+    /**
+     * Method used for initializing the class directly with the Manta SDK
+     * configuration. This is used for testing.
+     *
+     * @param name a uri whose authority section names the host, port, etc.
+     *             for this FileSystem. [Not used for Manta implementation]
+     * @param customConfig custom configuration
+     * @throws IOException thrown when we can't create a Manta Client
+     */
     @VisibleForTesting
-    void initialize(final URI name, final ConfigContext config) throws IOException {
-        this.config = config;
-        this.client = new MantaClient(this.config);
+    void initialize(final URI name, final ConfigContext customConfig) throws IOException {
+        this.config = customConfig;
+        this.client = new MantaClient(customConfig);
     }
 
+    /**
+     * Initialization method called after a new FileSystem instance is constructed.
+     *
+     * @param name a uri whose authority section names the host, port, etc.
+     *             for this FileSystem. [Not used for Manta implementation]
+     * @param conf Hadoop configuration object
+     * @throws IOException thrown when we can't create a Manta Client
+     */
     @Override
     public void initialize(final URI name, final Configuration conf) throws IOException {
         super.initialize(name, conf);
@@ -78,7 +122,6 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         this.config = chained;
         this.client = new MantaClient(this.config);
-        this.uri = URI.create("manta:///");
 
         this.workingDir = getInitialWorkingDirectory();
     }
@@ -94,17 +137,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
     @Override
     public URI getUri() {
-        return this.uri;
-    }
-
-    /**
-     * Make sure that a path specifies a FileSystem.
-     *
-     * @param path to use
-     */
-    @Override
-    public Path makeQualified(Path path) {
-        return super.makeQualified(path);
+        return this.ROOT_MANTA_URI;
     }
 
     @Override
@@ -175,7 +208,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         try {
              head = client.head(mantaPath);
         } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return false;
             }
 
@@ -258,7 +291,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         try {
             response = client.head(mantaPath);
         } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 throw new FileNotFoundException(mantaPath);
             }
 
@@ -282,7 +315,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         } catch (MantaClientHttpResponseException e) {
             /* We imitate the behavior of FileSystem.isDirectory, by changing a
              * FileNotFoundException into a false return value. */
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return false;
             }
 
@@ -305,7 +338,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
             MantaObject head = client.head(mantaPath);
             contentType = head.getContentType();
         } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 throw new FileNotFoundException(mantaPath);
             }
 
@@ -355,6 +388,13 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         return client.existsAndIsAccessible(destination);
     }
 
+    /**
+     * Converts a Hadoop {@link Path} object to a path String that the Manta
+     * client understands.
+     *
+     * @param path Hadoop path object to convert
+     * @return String representation of path on Manta
+     */
     private String mantaPath(final Path path) {
         final String mantaPath;
 
@@ -373,11 +413,23 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         return StringUtils.removeStart(mantaPath, "manta:");
     }
 
+    /**
+     * Package private visibility method for getting the Manta SDK client
+     * used for testing.
+     *
+     * @return reference to the backing Manta client
+     */
     @VisibleForTesting
     MantaClient getMantaClient() {
         return this.client;
     }
 
+    /**
+     * Package private visibility method for getting the Manta SDK configuration
+     * used for test.
+     *
+     * @return reference to the backing Manta SDK configuration
+     */
     @VisibleForTesting
     ConfigContext getConfig() {
         return this.config;

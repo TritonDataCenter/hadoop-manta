@@ -5,7 +5,7 @@ import org.apache.hadoop.fs.FsShell;
 import org.apache.hadoop.util.ToolRunner;
 
 public class FsShellMantaWrapper extends FsShell {
-    public static void main(String argv[]) throws Exception {
+    public static void main(final String[] argv) throws Exception {
         FsShell shell = newShellInstance();
         Configuration conf = new Configuration(false);
         conf.setQuietMode(false);

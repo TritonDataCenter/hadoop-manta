@@ -2,15 +2,27 @@ package org.apache.hadoop.fs.manta;
 
 import com.google.common.base.Preconditions;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.MapConfigContext;
 import org.apache.hadoop.conf.Configuration;
+
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTPS_CIPHERS;
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTPS_PROTOCOLS;
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_RETRIES;
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT;
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_TRANSPORT;
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MAX_CONNS;
+import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_SIGNATURE_CACHE_TTL;
+import static com.joyent.manta.config.DefaultsConfigContext.MANTA_KEY_PATH;
 
 /**
  * Manta configuration context implementation that wraps the Hadoop {@link Configuration}
  * passed in the constructor.
  */
 public class HadoopConfigurationContext implements ConfigContext {
+    /**
+     * Wrapped Hadoop configuration instance.
+     */
     private final Configuration configuration;
 
     /**
@@ -24,7 +36,7 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public String getMantaURL() {
-        return configuration.get(MapConfigContext.MANTA_URL_KEY, DefaultsConfigContext.DEFAULT_MANTA_URL);
+        return configuration.get(MapConfigContext.MANTA_URL_KEY, DEFAULT_MANTA_URL);
     }
 
     @Override
@@ -39,7 +51,7 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public String getMantaKeyPath() {
-        return configuration.get(MapConfigContext.MANTA_KEY_PATH_KEY, DefaultsConfigContext.MANTA_KEY_PATH);
+        return configuration.get(MapConfigContext.MANTA_KEY_PATH_KEY, MANTA_KEY_PATH);
     }
 
     @Override
@@ -54,7 +66,7 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public Integer getTimeout() {
-        return configuration.getInt(MapConfigContext.MANTA_TIMEOUT_KEY, DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT);
+        return configuration.getInt(MapConfigContext.MANTA_TIMEOUT_KEY, DEFAULT_HTTP_TIMEOUT);
     }
 
     @Override
@@ -64,27 +76,27 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public Integer getRetries() {
-        return configuration.getInt(MapConfigContext.MANTA_RETRIES_KEY, DefaultsConfigContext.DEFAULT_HTTP_RETRIES);
+        return configuration.getInt(MapConfigContext.MANTA_RETRIES_KEY, DEFAULT_HTTP_RETRIES);
     }
 
     @Override
     public Integer getMaximumConnections() {
-        return configuration.getInt(MapConfigContext.MANTA_MAX_CONNS_KEY, DefaultsConfigContext.DEFAULT_MAX_CONNS);
+        return configuration.getInt(MapConfigContext.MANTA_MAX_CONNS_KEY, DEFAULT_MAX_CONNS);
     }
 
     @Override
     public String getHttpTransport() {
-        return configuration.get(MapConfigContext.MANTA_HTTP_TRANSPORT_KEY, DefaultsConfigContext.DEFAULT_HTTP_TRANSPORT);
+        return configuration.get(MapConfigContext.MANTA_HTTP_TRANSPORT_KEY, DEFAULT_HTTP_TRANSPORT);
     }
 
     @Override
     public String getHttpsProtocols() {
-        return configuration.get(MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY, DefaultsConfigContext.DEFAULT_HTTPS_PROTOCOLS);
+        return configuration.get(MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY, DEFAULT_HTTPS_PROTOCOLS);
     }
 
     @Override
     public String getHttpsCipherSuites() {
-        return configuration.get(MapConfigContext.MANTA_HTTPS_CIPHERS_KEY, DefaultsConfigContext.DEFAULT_HTTPS_CIPHERS);
+        return configuration.get(MapConfigContext.MANTA_HTTPS_CIPHERS_KEY, DEFAULT_HTTPS_CIPHERS);
     }
 
     @Override
@@ -99,6 +111,6 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public Integer getSignatureCacheTTL() {
-        return configuration.getInt(MapConfigContext.MANTA_SIGS_CACHE_TTL_KEY, DefaultsConfigContext.DEFAULT_SIGNATURE_CACHE_TTL);
+        return configuration.getInt(MapConfigContext.MANTA_SIGS_CACHE_TTL_KEY, DEFAULT_SIGNATURE_CACHE_TTL);
     }
 }
