@@ -182,7 +182,13 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         LOG.debug("Creating new file with {} replicas at path: {}", replication, path);
 
         MantaObjectOutputStream out = client.putAsOutputStream(mantaPath, headers);
-        return new FSDataOutputStream(out, statistics);
+
+        if (progressable != null) {
+            ProgressingOutputStream pout = new ProgressingOutputStream(progressable, out);
+            return new FSDataOutputStream(pout, statistics);
+        } else {
+            return new FSDataOutputStream(out, statistics);
+        }
     }
 
     @Override

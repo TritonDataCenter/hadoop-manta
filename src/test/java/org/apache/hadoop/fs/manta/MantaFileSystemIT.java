@@ -7,6 +7,7 @@ import com.joyent.manta.config.ConfigContext;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -15,13 +16,17 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.util.Progressable;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -32,6 +37,8 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.internal.verification.VerificationModeFactory.atLeast;
 
 public class MantaFileSystemIT {
     private static final String TEST_DATA = "DATA GRAVITY CREATES DATA BLACK HOLES";
@@ -219,7 +226,7 @@ public class MantaFileSystemIT {
     }
 
     @Test
-    public void canAddFile() throws IOException {
+    public void canAddSmallFile() throws IOException {
         Path file = new Path(testPathPrefix + "upload-" + UUID.randomUUID() + ".txt");
         try (FSDataOutputStream out = fs.create(file)) {
             out.write(TEST_DATA.getBytes(Charsets.UTF_8));
@@ -231,6 +238,49 @@ public class MantaFileSystemIT {
 
         String actual = client.getAsString(file.toString());
         assertEquals("Uploaded contents didn't match", TEST_DATA, actual);
+    }
+
+    @Test
+    public void canAddLargerFile() throws IOException {
+        Path file = new Path(testPathPrefix + "upload-" + UUID.randomUUID() + ".txt");
+        final int oneMb = 1048576;
+        String random = RandomStringUtils.randomAlphanumeric(oneMb);
+        try (FSDataOutputStream out = fs.create(file);
+             InputStream in = new ByteArrayInputStream(random.getBytes(Charsets.UTF_8))) {
+            IOUtils.copy(in, out);
+        }
+
+        boolean exists = client.existsAndIsAccessible(file.toString());
+        assertTrue("File didn't get uploaded to path: " + file,
+                exists);
+
+        String actual = client.getAsString(file.toString());
+        assertEquals("Uploaded contents didn't match", random, actual);
+    }
+
+    @Test
+    public void canAddLargerFileWithProgress() throws IOException, InterruptedException {
+        Path file = new Path(testPathPrefix + "upload-" + UUID.randomUUID() + ".txt");
+        final int twoMb = 1048576 * 2;
+        String random = RandomStringUtils.randomAlphanumeric(twoMb);
+
+        final Progressable progressable = mock(Progressable.class);
+
+        try (FSDataOutputStream out = fs.create(file, progressable);
+             InputStream in = new ByteArrayInputStream(random.getBytes(Charsets.UTF_8))) {
+            IOUtils.copy(in, out);
+        }
+
+        // Make sure progress was called at least 4 times:
+        // #1 instantiation, #2 write, #3 flush, #4 close
+        Mockito.verify(progressable, atLeast(4));
+
+        boolean exists = client.existsAndIsAccessible(file.toString());
+        assertTrue("File didn't get uploaded to path: " + file,
+                exists);
+
+        String actual = client.getAsString(file.toString());
+        assertEquals("Uploaded contents didn't match", random, actual);
     }
 
     @Test
