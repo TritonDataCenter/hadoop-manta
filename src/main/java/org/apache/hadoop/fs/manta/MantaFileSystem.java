@@ -19,6 +19,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
+import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
@@ -361,6 +362,48 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         throw new UnsupportedOperationException("Truncating to an arbitrary length higher "
                 + "than zero is not supported at this time");
+    }
+
+    /**
+     * Get the checksum of a file.
+     *
+     * @param file The file path
+     * @return The file checksum.  The default return value is null,
+     * which indicates that no checksum algorithm is implemented
+     * in the corresponding FileSystem.
+     */
+    @Override
+    public FileChecksum getFileChecksum(final Path file) throws IOException {
+        final String mantaPath = mantaPath(file);
+
+        try {
+            final MantaObject head = client.head(mantaPath);
+
+            if (head.isDirectory()) {
+                throw new IOException("Can't get checksum of directory");
+            }
+
+            byte[] md5bytes = head.getMd5Bytes();
+            return new MantaChecksum(md5bytes);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                throw new FileNotFoundException(mantaPath);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Range based checksums are not supported.
+     *
+     * @param file The file path
+     * @param length The length of the file range for checksum calculation*
+     */
+    @Override
+    public FileChecksum getFileChecksum(final Path file, final long length) throws IOException {
+        // Hadoop returns a null when not supported, so we do the same
+        // Maybe, we could do this in the future with a Manta job
+        return null;
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -11,6 +12,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
@@ -417,5 +419,27 @@ public class MantaFileSystemIT {
                 .setContentType("text/plain");
         client.put(file.toString(), TEST_DATA, headers);
         fs.truncate(file, 100);
+    }
+
+    @Test
+    public void canCalculateChecksumForRemoteFile() throws IOException {
+        Path file = new Path(testPathPrefix + "checksum-" + UUID.randomUUID() + ".txt");
+        MantaObject response = client.put(file.toString(), TEST_DATA);
+        byte[] responseMd5 = response.getMd5Bytes();
+        byte[] hdfsMd5 = fs.getFileChecksum(file).getBytes();
+        byte[] calculatedMd5 = DigestUtils.md5(TEST_DATA);
+
+        Assert.assertArrayEquals("Uploaded checksum was not correct",
+                calculatedMd5, responseMd5);
+        Assert.assertArrayEquals("MD5 checksum from HDFS driver was not correct",
+                calculatedMd5, hdfsMd5);
+    }
+
+    @Test
+    public void verifyRangeChecksumsDontWork() throws IOException {
+        Path file = new Path(testPathPrefix + "checksum-" + UUID.randomUUID() + ".txt");
+        FileChecksum result = fs.getFileChecksum(file, 12);
+
+        Assert.assertNull("Result was null - indicating unimplemented", result);
     }
 }
