@@ -5,6 +5,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaDirectoryListingIterator;
 import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaObject;
+import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectOutputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.MantaSeekableByteChannel;
@@ -22,6 +23,7 @@ import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
@@ -32,9 +34,12 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.function.Function;
 
 /**
@@ -231,6 +236,115 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         }
 
         return !client.existsAndIsAccessible(mantaPath);
+    }
+
+    /**
+     * Copies a file from the local system to the Manta object store.
+     *
+     * @param delSrc    whether to delete the source
+     * @param overwrite whether to overwrite an existing file
+     * @param src       file source path
+     * @param dst       file destination
+     */
+    @Override
+    public void copyFromLocalFile(final boolean delSrc, final boolean overwrite,
+                                  final Path src, final Path dst) throws IOException {
+        String mantaPath = mantaPath(dst);
+
+        LOG.debug("Copying local file [{}] to [{}]", src, dst);
+
+        if (!overwrite) {
+            try {
+                MantaObject head = client.head(mantaPath);
+                if (!head.isDirectory()) {
+                    throw new IOException("Can't copy file because destination "
+                            + "already exists: " + dst);
+                }
+            } catch (MantaClientHttpResponseException e) {
+                // 404 means we are good to go and not overwriting,
+                // so we throw any error that is not a 404
+                if (e.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                    throw e;
+                }
+
+                // Make any missing parent paths
+                Path parent = dst.getParent();
+                LOG.debug("Creating parent directory: {}", parent);
+                client.putDirectory(mantaPath(parent), true);
+            }
+        }
+
+        LocalFileSystem localFs = getLocal(getConf());
+        File localFile = localFs.pathToFile(src);
+
+        /* We used the default copy implementation if it is a wildcard copy
+         * because we don't support wildcard copy in the Manta SDK yet. */
+        if (localFile.isDirectory()) {
+            super.copyFromLocalFile(delSrc, overwrite, src, dst);
+            return;
+        }
+
+        client.put(mantaPath, localFile);
+
+        if (delSrc) {
+            Files.delete(localFile.toPath());
+        }
+    }
+
+    /**
+     * The src file is under FS, and the dst is on the local disk. Copy it from FS
+     * control to the local dst name. delSrc indicates if the src will be removed
+     * or not. useRawLocalFileSystem indicates whether to use RawLocalFileSystem
+     * as local file system or not. RawLocalFileSystem is non crc file system.So,
+     * It will not create any crc files at local.
+     *
+     * @param delSrc                whether to delete the src
+     * @param src                   path
+     * @param dst                   path
+     * @param useRawLocalFileSystem whether to use RawLocalFileSystem as local file system or not.
+     * @throws IOException - if any IO error
+     */
+    @Override
+    public void copyToLocalFile(final boolean delSrc, final Path src,
+                                final Path dst, final boolean useRawLocalFileSystem) throws IOException {
+        /* If we can't get a reference to a File object, then we are better off
+         * relying on the default implementation of this method.
+         */
+        if (useRawLocalFileSystem) {
+            super.copyToLocalFile(delSrc, src, dst, useRawLocalFileSystem);
+            return;
+        }
+
+        Configuration conf = getConf();
+        LocalFileSystem local = getLocal(conf);
+        File localFile = local.pathToFile(dst);
+        String mantaPath = mantaPath(src);
+
+        try {
+            MantaObject head = client.head(mantaPath);
+
+            /* We don't support wildcard copy yet, so we rely on the default
+             * implementation of this method. */
+            if (head.isDirectory()) {
+                super.copyToLocalFile(delSrc, src, dst, useRawLocalFileSystem);
+                return;
+            }
+
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                throw new FileNotFoundException(mantaPath);
+            }
+
+            throw e;
+        }
+
+        try (MantaObjectInputStream in = client.getAsInputStream(mantaPath)) {
+            Files.copy(in, localFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        if (delSrc) {
+            client.deleteRecursive(mantaPath);
+        }
     }
 
     @Override

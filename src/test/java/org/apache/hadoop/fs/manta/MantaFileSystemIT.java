@@ -6,6 +6,7 @@ import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.RandomStringUtils;
@@ -27,10 +28,12 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -441,5 +444,209 @@ public class MantaFileSystemIT {
         FileChecksum result = fs.getFileChecksum(file, 12);
 
         Assert.assertNull("Result was null - indicating unimplemented", result);
+    }
+
+    @Test
+    public void canCopySingleLocalFileToManta() throws IOException {
+        File temp = File.createTempFile("file-copy-", ".txt");
+        String mantaPath = testPathPrefix + temp.getName();
+
+        try {
+            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
+            fs.copyFromLocalFile(false, false,
+                    new Path(temp.toURI()),
+                    new Path("manta://" + mantaPath));
+
+            String actual = client.getAsString(mantaPath);
+            assertEquals("Uploaded contents didn't match", TEST_DATA, actual);
+        } finally {
+            Assert.assertTrue("Source file shouldn't have been deleted",
+                    Files.deleteIfExists(temp.toPath()));
+        }
+    }
+
+    @Test
+    public void wontOverwriteCopySingleLocalFileToManta() throws IOException {
+        File temp = File.createTempFile("file-copy-", ".txt");
+        String mantaPath = testPathPrefix + temp.getName();
+
+        try {
+            Files.write(temp.toPath(), TEST_DATA.getBytes(Charsets.UTF_8));
+            client.put(mantaPath, TEST_DATA);
+
+            boolean thrown = false;
+
+            try {
+                fs.copyFromLocalFile(false, false,
+                        new Path(temp.toURI()),
+                        new Path("manta://" + mantaPath));
+            } catch (IOException e) {
+                thrown = e.getMessage().startsWith("Can't copy file because destination "
+                        + "already exists: ");
+            }
+
+            Assert.assertTrue("Overwrite exception not thrown", thrown);
+
+            String actual = client.getAsString(mantaPath);
+            assertEquals("Uploaded contents didn't match", TEST_DATA, actual);
+        } finally {
+            Assert.assertTrue("Source file shouldn't have been deleted",
+                    Files.deleteIfExists(temp.toPath()));
+        }
+    }
+
+    @Test
+    public void canOverwriteCopySingleLocalFileToManta() throws IOException {
+        File temp = File.createTempFile("file-copy-", ".txt");
+        String mantaPath = testPathPrefix + temp.getName();
+
+        try {
+            Files.write(temp.toPath(), (TEST_DATA).getBytes(Charsets.UTF_8));
+            client.put(mantaPath, TEST_DATA + "222");
+
+            fs.copyFromLocalFile(false, true,
+                        new Path(temp.toURI()),
+                        new Path("manta://" + mantaPath));
+
+            String actual = client.getAsString(mantaPath);
+            assertEquals("Uploaded contents didn't match overwritten value",
+                    TEST_DATA, actual);
+        } finally {
+            Assert.assertTrue("Source file shouldn't have been deleted",
+                    Files.deleteIfExists(temp.toPath()));
+        }
+    }
+
+    @Test
+    public void willDeleteSourceCopySingleLocalFileToManta() throws IOException {
+        File temp = File.createTempFile("file-copy-", ".txt");
+        String mantaPath = testPathPrefix + temp.getName();
+
+        try {
+            Files.write(temp.toPath(), (TEST_DATA).getBytes(Charsets.UTF_8));
+
+            fs.copyFromLocalFile(true, false,
+                    new Path(temp.toURI()),
+                    new Path("manta://" + mantaPath));
+
+            String actual = client.getAsString(mantaPath);
+            assertEquals("Uploaded contents didn't match overwritten value",
+                    TEST_DATA, actual);
+        } finally {
+            Assert.assertFalse("Source file should have been deleted",
+                    Files.deleteIfExists(temp.toPath()));
+        }
+    }
+
+    @Test
+    public void canCopyLocalDirectoryToManta() throws IOException {
+        String mantaPath = testPathPrefix + "wildcard-upload";
+        client.putDirectory(mantaPath);
+
+        String tempDirPath = FileUtils.getTempDirectoryPath() + File.separator +
+                UUID.randomUUID();
+        File tempDir = new File(tempDirPath);
+        Assert.assertTrue("Expected temp subdir to be created", tempDir.mkdir());
+
+        try {
+            File file1 = new File(tempDirPath + File.separator + "file-1.txt");
+            File file2 = new File(tempDirPath + File.separator + "file-2.txt");
+
+            Files.write(file1.toPath(), (TEST_DATA).getBytes(Charsets.UTF_8));
+            Files.write(file2.toPath(), (TEST_DATA).getBytes(Charsets.UTF_8));
+
+            fs.copyFromLocalFile(false, false,
+                    new Path(tempDir.toURI()),
+                    new Path("manta://" + mantaPath));
+
+            String file1MantaPath = mantaPath + MantaClient.SEPARATOR +
+                    tempDir.getName() + MantaClient.SEPARATOR + file1.getName();
+            Assert.assertEquals(client.getAsString(file1MantaPath), TEST_DATA);
+            String file2MantaPath = mantaPath + MantaClient.SEPARATOR +
+                    tempDir.getName() + MantaClient.SEPARATOR + file2.getName();
+            Assert.assertTrue(client.existsAndIsAccessible(file2MantaPath));
+            Assert.assertEquals(client.getAsString(file2MantaPath), TEST_DATA);
+        } finally {
+            FileUtils.deleteDirectory(tempDir);
+        }
+    }
+
+    @Test
+    public void canCopyFromMantaToLocalSingleFile() throws IOException {
+        File temp = File.createTempFile("file-copy-", ".txt");
+        String mantaPath = testPathPrefix + temp.getName();
+        client.put(mantaPath, TEST_DATA);
+
+        try {
+            fs.copyToLocalFile(false, new Path("manta://" + mantaPath),
+                    new Path(temp.toURI()), false);
+
+            String actual = FileUtils.readFileToString(temp);
+            assertEquals("Downloaded contents didn't match", TEST_DATA, actual);
+        } finally {
+            Assert.assertTrue("Source file shouldn't have been deleted",
+                    client.existsAndIsAccessible(mantaPath));
+        }
+    }
+
+    @Test
+    public void canCopyFromMantaToLocalSingleFileWithRawFilesystem() throws IOException {
+        File temp = File.createTempFile("file-copy-", ".txt");
+        String mantaPath = testPathPrefix + temp.getName();
+        client.put(mantaPath, TEST_DATA);
+
+        try {
+            fs.copyToLocalFile(false, new Path("manta://" + mantaPath),
+                    new Path(temp.toURI()), true);
+
+            String actual = FileUtils.readFileToString(temp);
+            assertEquals("Downloaded contents didn't match", TEST_DATA, actual);
+        } finally {
+            Assert.assertTrue("Source file shouldn't have been deleted",
+                    client.existsAndIsAccessible(mantaPath));
+        }
+    }
+
+    @Test
+    public void canCopyFromMantaToLocalSingleFileAndDeleteSource() throws IOException {
+        File temp = File.createTempFile("file-copy-", ".txt");
+        String mantaPath = testPathPrefix + temp.getName();
+        client.put(mantaPath, TEST_DATA);
+
+        try {
+            fs.copyToLocalFile(true, new Path("manta://" + mantaPath),
+                    new Path(temp.toURI()), false);
+
+            String actual = FileUtils.readFileToString(temp);
+            assertEquals("Downloaded contents didn't match", TEST_DATA, actual);
+        } finally {
+            Assert.assertFalse("Source file should have been deleted",
+                    client.existsAndIsAccessible(mantaPath));
+        }
+    }
+
+    @Test
+    public void canCopyFromMantaDirectoryToLocalDirectory() throws IOException {
+        String tempDirPath = FileUtils.getTempDirectoryPath() + File.separator
+                + "manta-copy-" + UUID.randomUUID() + File.separator;
+        File tempDir = new File(tempDirPath);
+        String mantaPath = testPathPrefix + "test-dir" + MantaClient.SEPARATOR;
+        client.putDirectory(mantaPath);
+        client.put(mantaPath + "file-1.txt", TEST_DATA);
+        client.put(mantaPath + "file-2.txt", TEST_DATA);
+
+        try {
+            fs.copyToLocalFile(true, new Path("manta://" + mantaPath),
+                    new Path(tempDir.toURI()), false);
+
+            File file1 = new File(tempDirPath + "file-1.txt");
+            String actual1 = FileUtils.readFileToString(file1);
+            assertEquals("Downloaded contents didn't match", TEST_DATA, actual1);
+            File file2 = new File(tempDirPath + "file-2.txt");
+            String actual2 = FileUtils.readFileToString(file2);
+            assertEquals("Downloaded contents didn't match", TEST_DATA, actual2);
+        } finally {
+            FileUtils.deleteDirectory(tempDir);
+        }
     }
 }
