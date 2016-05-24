@@ -267,6 +267,9 @@
                         <hadoop.home.dir>${project.build.directory}/hadoop_home</hadoop.home.dir>
                     </systemPropertyVariables>
                     <useSystemClassLoader>${failsafe.useSystemClassLoader}</useSystemClassLoader>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
                 </configuration>
             </plugin>
             <plugin>
