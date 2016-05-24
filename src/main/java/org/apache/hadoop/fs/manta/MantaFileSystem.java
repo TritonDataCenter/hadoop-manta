@@ -343,7 +343,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         }
 
         if (delSrc) {
-            client.deleteRecursive(mantaPath);
+            client.delete(mantaPath);
         }
     }
 
