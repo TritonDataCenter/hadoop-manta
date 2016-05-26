@@ -125,6 +125,15 @@ public class MantaFileSystemIT {
     }
 
     @Test
+    public void canGetFileStatusOnRoot() throws IOException {
+        Path path = new Path("/");
+        FileStatus rootStatus = fs.getFileStatus(path);
+        assertTrue("Root status is always a directory", rootStatus.isDirectory());
+        assertEquals("Path should be root path",
+                path, rootStatus.getPath());
+    }
+
+    @Test
     public void canListStatus() throws IOException {
         client.putDirectory(testPathPrefix + "dir-1");
         client.putDirectory(testPathPrefix + "dir-2");

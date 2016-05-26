@@ -54,6 +54,24 @@ public class MantaFileStatus extends FileStatus {
             new SimpleDateFormat(MantaObjectResponse.PATTERN_ISO_8601);
 
     /**
+     * Status for filesystem root. This is a reserved value in Manta and is
+     * not normally queried via the REST API. We allow it for compatibility
+     * with Hadoop Filesystem consumers.
+     */
+    public static final MantaFileStatus ROOT =
+            new MantaFileStatus(true, new Path("/"));
+
+    /**
+     * Package default constructor for creating special status objects.
+     * @param isDir true if status is for directory
+     * @param path path to status
+     */
+    MantaFileStatus(final boolean isDir, final Path path) {
+        super(UNKNOWN_LENGTH, true, UNKNOWN_REPLICATION_FACTOR, UNKNOWN_BLOCK_SIZE,
+                UNKNOWN_MOD_TIME, path);
+    }
+
+    /**
      * Creates a new instance based off of a Manta response object.
      *
      * @param mantaObject Manta response object

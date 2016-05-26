@@ -92,7 +92,7 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${dependency.hadoop.version}</version>
-            <!--<scope>provided</scope>-->
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -330,33 +330,22 @@
                     <useSystemClassLoader>${surefire.useSystemClassLoader}</useSystemClassLoader>
                 </configuration>
             </plugin>
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-shade-plugin</artifactId>-->
-                <!--<version>${maven-shade-plugin.version}</version>-->
-
-                <!--<configuration>-->
-                    <!--<minimizeJar>true</minimizeJar>-->
-                    <!--<artifactSet>-->
-                        <!--<excludes>-->
-                            <!--<exclude>org.apache.hadoop:*</exclude>-->
-                            <!--<exclude>org.slf4j:*</exclude>-->
-                            <!--<exclude>junit:junit</exclude>-->
-                            <!--<exclude>META-INF/*.SF</exclude>-->
-                            <!--<exclude>META-INF/*.DSA</exclude>-->
-                            <!--<exclude>META-INF/*.RSA</exclude>-->
-                        <!--</excludes>-->
-                    <!--</artifactSet>-->
-                <!--</configuration>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<phase>package</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>shade</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptorId>jar-with-dependencies</descriptorId>
+                    <finalName>hadoop-manta-${project.version}</finalName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
