@@ -13,7 +13,6 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileChecksum;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
@@ -448,11 +447,34 @@ public class MantaFileSystemIT {
     }
 
     @Test
-    public void verifyRangeChecksumsDontWork() throws IOException {
+    public void canCalculateRangeChecksumsLocally() throws IOException {
         Path file = new Path(testPathPrefix + "checksum-" + UUID.randomUUID() + ".txt");
-        FileChecksum result = fs.getFileChecksum(file, 12);
+        client.put(file.toString(), TEST_DATA);
 
-        Assert.assertNull("Result was null - indicating unimplemented", result);
+        int length = 12;
+        byte[] calculatedMd5 = DigestUtils.md5(TEST_DATA.substring(0, length));
+        byte[] hdfsMd5 = fs.getFileChecksumLocally(file.toString(), length).getBytes();
+
+        Assert.assertArrayEquals("MD5 checksum from HDFS driver was not correct",
+                calculatedMd5, hdfsMd5);
+    }
+
+    @Test
+    public void canCalculateRangeChecksumsRemotely() throws IOException {
+        Path file = new Path(testPathPrefix + "checksum-" + UUID.randomUUID() + ".txt");
+        int size = (int)MantaFileSystem.DEFAULT_THRESHOLD_FOR_REMOTE_CHECKSUM_CALC + 10;
+        byte[] randomData = RandomStringUtils.randomAlphanumeric(size).getBytes(Charsets.UTF_8);
+
+        try (InputStream in = new ByteArrayInputStream(randomData)){
+            client.put(file.toString(), in);
+        }
+
+        int length = 1024;
+        byte[] calculatedMd5 = DigestUtils.md5(Arrays.copyOfRange(randomData, 0, length));
+        byte[] hdfsMd5 = fs.getFileChecksumRemotely(file.toString(), length).getBytes();
+
+        Assert.assertArrayEquals("MD5 checksum from HDFS driver was not correct",
+                calculatedMd5, hdfsMd5);
     }
 
     @Test

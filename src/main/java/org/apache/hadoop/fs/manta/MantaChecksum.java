@@ -1,6 +1,8 @@
 package org.apache.hadoop.fs.manta;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.fs.FileChecksum;
 
 import java.io.DataInput;
@@ -39,6 +41,17 @@ public class MantaChecksum extends FileChecksum {
                 md5bytes.length);
 
         this.md5bytes = md5bytes;
+    }
+
+    public MantaChecksum(final String hexString) throws DecoderException {
+        Preconditions.checkNotNull(hexString, "MD5 hexstring must be present");
+        final byte[] bytes = Hex.decodeHex(hexString.toCharArray());
+
+        Preconditions.checkArgument(bytes.length == MD5_LENGTH,
+                "Invalid number of bytes [%d] for MD5 checksum",
+                bytes.length);
+
+        this.md5bytes = bytes;
     }
 
     /**

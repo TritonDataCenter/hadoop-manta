@@ -1,9 +1,12 @@
 package org.apache.hadoop.fs.manta;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaDirectoryListingIterator;
 import com.joyent.manta.client.MantaHttpHeaders;
+import com.joyent.manta.client.MantaJobBuilder;
+import com.joyent.manta.client.MantaJobPhase;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectOutputStream;
@@ -13,6 +16,9 @@ import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
@@ -37,10 +43,14 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * This class is a <a href="https://github.com/joyent/manta">Manta object store</a>
@@ -54,6 +64,13 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
      */
     public static final Logger LOG =
             LoggerFactory.getLogger(MantaFileSystem.class);
+
+    /**
+     * File size threshold in which to run checksums using Manta job rather
+     * than downloading and then running.
+     */
+    public static final long DEFAULT_THRESHOLD_FOR_REMOTE_CHECKSUM_CALC =
+            1_048_576L;
 
     /**
      * Alias for the home directory in Manta.
@@ -525,16 +542,105 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     }
 
     /**
-     * Range based checksums are not supported.
+     * Get the checksum of a file, from the beginning of the file till the
+     * specific length. Warning this operation is slow because we either have to
+     * download the entire file or run a remote job in order to calculate the checksum.
      *
      * @param file The file path
      * @param length The length of the file range for checksum calculation*
      */
-    @Override
     public FileChecksum getFileChecksum(final Path file, final long length) throws IOException {
-        // Hadoop returns a null when not supported, so we do the same
-        // Maybe, we could do this in the future with a Manta job
-        return null;
+        Preconditions.checkArgument(length >= 0,
+                "File range length must be greater than or equal to zero");
+
+        final String mantaPath = mantaPath(file);
+
+        try {
+            final MantaObject head = client.head(mantaPath);
+
+            if (head.isDirectory()) {
+                throw new IOException("Can't get checksum of directory");
+            }
+
+            if (head.getContentLength() > DEFAULT_THRESHOLD_FOR_REMOTE_CHECKSUM_CALC) {
+                return getFileChecksumRemotely(mantaPath, length);
+            } else {
+                return getFileChecksumLocally(mantaPath, length);
+            }
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                throw new FileNotFoundException(mantaPath);
+            }
+
+            throw e;
+        }
+    }
+
+    /**
+     * Get the checksum of a file, from the beginning of the file till the
+     * specific length. Warning this operation is slow because we have to
+     * download the entire file in order to calculate the checksum.
+     *
+     * @param mantaPath The file path
+     * @param length The length of the file range for checksum calculation*
+     */
+    FileChecksum getFileChecksumLocally(final String mantaPath, final long length) throws IOException {
+        LOG.debug("Calculating checksum for file {} locally by downloading all content",
+                mantaPath);
+
+        try (InputStream in = client.getAsInputStream(mantaPath);
+             BoundedInputStream bin = new BoundedInputStream(in, length)) {
+            byte[] bytes = DigestUtils.md5(bin);
+            return new MantaChecksum(bytes);
+        }
+    }
+
+    /**
+     * Get the checksum of a file, from the beginning of the file till the
+     * specific length. Warning this operation is slow because we have to
+     * execute a remote job in order to perform it.
+     *
+     * @param mantaPath The file path
+     * @param length The length of the file range for checksum calculation*
+     */
+    FileChecksum getFileChecksumRemotely(final String mantaPath, final long length) throws IOException {
+        LOG.debug("Calculating checksum for file {} remotely using Manta job",
+                mantaPath);
+
+        MantaJobBuilder builder = client.jobBuilder();
+        String jobName = String.format("hadoop-range-checksum-%s",
+                UUID.randomUUID());
+        MantaJobBuilder.Run runningJob = builder.newJob(jobName)
+                .addInput(mantaPath)
+                .addPhase(new MantaJobPhase()
+                .setType("reduce")
+                .setExec(String.format("head -c %d | md5sum -b | cut -d' ' -f1", length))
+                .setMemory(256)
+                .setDisk(2))
+                .validateInputs()
+                .run();
+
+        MantaJobBuilder.Done finishedJob = runningJob.waitUntilDone()
+                .validateJobsSucceeded();
+
+        String hexString = null;
+
+        try (Stream<String> outputs = finishedJob.outputs()) {
+            Optional<String> first = outputs.findFirst();
+
+            if (!first.isPresent()) {
+                String msg = String.format("No md5 outputted from calculation job [%s]",
+                        runningJob.getJob().getId());
+                throw new IOException(msg);
+            }
+
+            hexString = first.get().trim();
+            return new MantaChecksum(hexString);
+        } catch (DecoderException e) {
+            String msg = String.format("Unable to decode hex string as md5: %s",
+                    hexString);
+            throw new IOException(msg, e);
+        }
     }
 
     @Override
