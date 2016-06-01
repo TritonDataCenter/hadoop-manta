@@ -1,1 +1,1 @@
-org.apache.hadoop.fs.manta.MantaFileSystem
+com.joyent.hadoop.fs.manta.MantaFileSystem

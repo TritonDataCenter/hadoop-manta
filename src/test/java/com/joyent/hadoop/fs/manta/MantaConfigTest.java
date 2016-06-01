@@ -1,5 +1,6 @@
-package org.apache.hadoop.fs.manta;
+package com.joyent.hadoop.fs.manta;
 
+import com.joyent.hadoop.fs.manta.MantaFileSystem;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package org.apache.hadoop.fs.manta;
+package com.joyent.hadoop.fs.manta;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.util.Progressable;

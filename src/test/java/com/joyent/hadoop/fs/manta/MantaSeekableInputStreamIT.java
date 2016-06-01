@@ -1,4 +1,4 @@
-package org.apache.hadoop.fs.manta;
+package com.joyent.hadoop.fs.manta;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaSeekableByteChannel;

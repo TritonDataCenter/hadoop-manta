@@ -1,5 +1,6 @@
-package org.apache.hadoop.fs.manta;
+package com.joyent.hadoop.fs.manta;
 
+import com.joyent.hadoop.fs.manta.MantaFileSystem;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaObject;
