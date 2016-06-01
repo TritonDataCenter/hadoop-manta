@@ -60,7 +60,7 @@ left are overridden by values on the right.
 |                                      | manta.key_content         | MANTA_KEY_CONTENT         |
 |                                      | manta.password            | MANTA_PASSWORD            |
 | 20000                                | manta.timeout             | MANTA_TIMEOUT             |
-| 3 (6 for integration tests)          | manta.retries             | MANTA_HTTP_RETRIES        |
+| 3                                    | manta.retries             | MANTA_HTTP_RETRIES        |
 | 24                                   | manta.max_connections     | MANTA_MAX_CONNS           |
 | ApacheHttpTransport                  | manta.http_transport      | MANTA_HTTP_TRANSPORT      |
 | TLSv1.2                              | https.protocols           | MANTA_HTTPS_PROTOCOLS     |
