@@ -398,6 +398,10 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         String mantaPath = mantaPath(path);
 
+        if (!client.existsAndIsAccessible(mantaPath)) {
+            throw new FileNotFoundException(mantaPath);
+        }
+
         /* We emulate a normal filesystem by showing the home directory under root in
          * in order to provide compatibility with consumers that expect this behavior. */
         if (mantaPath.equals("/")) {
