@@ -43,6 +43,12 @@ public class MantaChecksum extends FileChecksum {
         this.md5bytes = md5bytes;
     }
 
+    /**
+     * Creates a new checksum based off of the plain text hex string.
+     *
+     * @param hexString plain text hex string
+     * @throws DecoderException thrown when hex string can't be parsed
+     */
     public MantaChecksum(final String hexString) throws DecoderException {
         Preconditions.checkNotNull(hexString, "MD5 hexstring must be present");
         final byte[] bytes = Hex.decodeHex(hexString.toCharArray());

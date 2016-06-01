@@ -548,6 +548,8 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
      *
      * @param file The file path
      * @param length The length of the file range for checksum calculation*
+     * @return the checksum of an arbitrary amount of bytes from the start of a file
+     * @throws IOException thrown when unable to compute the checksum
      */
     public FileChecksum getFileChecksum(final Path file, final long length) throws IOException {
         Preconditions.checkArgument(length >= 0,
@@ -583,6 +585,8 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
      *
      * @param mantaPath The file path
      * @param length The length of the file range for checksum calculation*
+     * @return the checksum of an arbitrary amount of bytes from the start of a file
+     * @throws IOException thrown when unable to compute the checksum
      */
     FileChecksum getFileChecksumLocally(final String mantaPath, final long length) throws IOException {
         LOG.debug("Calculating checksum for file {} locally by downloading all content",
@@ -602,6 +606,8 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
      *
      * @param mantaPath The file path
      * @param length The length of the file range for checksum calculation*
+     * @return the checksum of an arbitrary amount of bytes from the start of a file
+     * @throws IOException thrown when unable to compute the checksum
      */
     FileChecksum getFileChecksumRemotely(final String mantaPath, final long length) throws IOException {
         LOG.debug("Calculating checksum for file {} remotely using Manta job",
@@ -610,13 +616,12 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         MantaJobBuilder builder = client.jobBuilder();
         String jobName = String.format("hadoop-range-checksum-%s",
                 UUID.randomUUID());
+
         MantaJobBuilder.Run runningJob = builder.newJob(jobName)
                 .addInput(mantaPath)
                 .addPhase(new MantaJobPhase()
                 .setType("reduce")
-                .setExec(String.format("head -c %d | md5sum -b | cut -d' ' -f1", length))
-                .setMemory(256)
-                .setDisk(2))
+                .setExec(String.format("head -c %d | md5sum -b | cut -d' ' -f1", length)))
                 .validateInputs()
                 .run();
 
