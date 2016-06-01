@@ -208,6 +208,17 @@ public class MantaFileSystemIT {
     }
 
     @Test
+    public void canMakeMultipleDirectories() throws IOException {
+        Path newDirectory = new Path(testPathPrefix + "newDirectory-"  + UUID.randomUUID()
+            + MantaClient.SEPARATOR + "subdir1" + MantaClient.SEPARATOR + "subdir2");
+        boolean result = fs.mkdirs(newDirectory);
+
+        assertTrue("Directory not indicated as created", result);
+        boolean exists = client.existsAndIsAccessible(newDirectory.toString());
+        assertTrue("Directory doesn't exist on Manta", exists);
+    }
+
+    @Test
     public void canDetermineIfDirectory() throws IOException {
         Path dir = new Path(testPathPrefix + "newDirectory-" + UUID.randomUUID());
         boolean added = client.putDirectory(dir.toString());
