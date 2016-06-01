@@ -62,12 +62,6 @@ import java.util.stream.Stream;
 @InterfaceAudience.Public
 public class MantaFileSystem extends FileSystem implements AutoCloseable {
     /**
-     * Logger instance.
-     */
-    public static final Logger LOG =
-            LoggerFactory.getLogger(MantaFileSystem.class);
-
-    /**
      * File size threshold in which to run checksums using Manta job rather
      * than downloading and then running.
      */
@@ -75,9 +69,20 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
             1_048_576L;
 
     /**
+     * Default replication factor.
+     */
+    public static final short DEFAULT_DURABILITY_LEVEL = 2;
+
+    /**
      * Alias for the home directory in Manta.
      */
     public static final Path HOME_ALIAS_PATH = new Path("~~");
+
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOG =
+            LoggerFactory.getLogger(MantaFileSystem.class);
 
     /**
      * The root Manta URI used to identify the filesystem.
@@ -683,6 +688,28 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         return storage.values().stream()
                 .mapToLong(value -> Long.parseLong(value.getOrDefault("bytes", "0")))
                 .sum();
+    }
+
+    /**
+     * Get the default replication.
+     *
+     * @deprecated use {@link #getDefaultReplication(Path)} instead
+     */
+    @Override
+    public short getDefaultReplication() {
+        return DEFAULT_DURABILITY_LEVEL;
+    }
+
+    /**
+     * In Manta all paths have the same default replication factor. This will
+     * always return the same value.
+     *
+     * @param path of the file
+     * @return default replication for the path's filesystem
+     */
+    @Override
+    public short getDefaultReplication(final Path path) {
+        return DEFAULT_DURABILITY_LEVEL;
     }
 
     @Override
