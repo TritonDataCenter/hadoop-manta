@@ -691,4 +691,10 @@ public class MantaFileSystemIT {
             FileUtils.deleteDirectory(tempDir);
         }
     }
+
+    @Test
+    public void canGetUsedStats() throws IOException {
+        final long totalUsed = fs.getUsed();
+        assertTrue("Total used was an inaccurate value", totalUsed > 0);
+    }
 }

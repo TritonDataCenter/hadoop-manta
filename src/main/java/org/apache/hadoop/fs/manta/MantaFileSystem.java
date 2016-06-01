@@ -2,6 +2,7 @@ package org.apache.hadoop.fs.manta;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.gson.Gson;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaDirectoryListingIterator;
 import com.joyent.manta.client.MantaHttpHeaders;
@@ -47,6 +48,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -648,6 +650,39 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
                     hexString);
             throw new IOException(msg, e);
         }
+    }
+
+
+    /**
+     * Return the total size of all files in the filesystem.
+     */
+    @Override
+    public long getUsed() throws IOException {
+        String usageFilePath = String.format("%s/reports/usage/storage/latest",
+                config.getMantaHomeDirectory());
+
+        String json = null;
+
+        try {
+             json = client.getAsString(usageFilePath);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                String msg = "Usage report file not found. Typically it will take"
+                        + "one day to generate for a new account";
+                throw new FileNotFoundException(msg);
+            }
+        }
+
+        Preconditions.checkNotNull(json, "Response from usage inquiry shouldn't be null");
+
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, String>> storage =
+                (Map<String, Map<String, String>>)new Gson()
+                .fromJson(json, Map.class).get("storage");
+
+        return storage.values().stream()
+                .mapToLong(value -> Long.parseLong(value.getOrDefault("bytes", "0")))
+                .sum();
     }
 
     @Override
