@@ -10,6 +10,8 @@ whereas S3/Swift use a key/value system. This model aligns closely with the Hado
 Filesystem model and it leaves us with very few divergences from the default
 behavior.
 
+This project is licensed under the [Apache 2.0 license](LICENSE.txt).
+
 ## Quirks / Divergences
  * There is no HDFS functionality natively implemented. All files are accessed
    via network data transfer.
