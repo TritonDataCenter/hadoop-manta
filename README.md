@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/joyent/hadoop-manta.svg?branch=master)](https://travis-ci.org/joyent/hadoop-manta)
+
 # Manta Filesystem for Hadoop
 
 ## Introduction
