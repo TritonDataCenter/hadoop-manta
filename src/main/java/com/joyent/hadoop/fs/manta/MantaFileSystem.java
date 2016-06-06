@@ -19,6 +19,7 @@ import com.joyent.manta.config.SystemSettingsConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -210,6 +211,13 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         }
 
         LOG.debug("Creating new file with {} replicas at path: {}", replication, path);
+
+        String dir = FilenameUtils.getFullPath(mantaPath);
+
+        if (!client.existsAndIsAccessible(dir)) {
+            LOG.debug("Directory path to file didn't exist. Creating path: {}", dir);
+            client.putDirectory(dir, true);
+        }
 
         MantaObjectOutputStream out = client.putAsOutputStream(mantaPath, headers);
 

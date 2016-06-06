@@ -1,6 +1,5 @@
 package com.joyent.hadoop.fs.manta;
 
-import com.joyent.hadoop.fs.manta.MantaFileSystem;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaObject;
@@ -253,6 +252,25 @@ public class MantaFileSystemIT {
     @Test
     public void canAddSmallFile() throws IOException {
         Path file = new Path(testPathPrefix + "upload-" + UUID.randomUUID() + ".txt");
+        try (FSDataOutputStream out = fs.create(file)) {
+            out.write(TEST_DATA.getBytes(Charsets.UTF_8));
+        }
+
+        boolean exists = client.existsAndIsAccessible(file.toString());
+        assertTrue("File didn't get uploaded to path: " + file,
+                exists);
+
+        String actual = client.getAsString(file.toString());
+        assertEquals("Uploaded contents didn't match", TEST_DATA, actual);
+    }
+
+    @Test
+    public void canAddSmallFileToNonExistentPath() throws IOException {
+        Path file = new Path(testPathPrefix +
+                "i-dont-exist" + MantaClient.SEPARATOR + UUID.randomUUID() +
+                MantaClient.SEPARATOR +
+                "upload-" + UUID.randomUUID() + ".txt");
+
         try (FSDataOutputStream out = fs.create(file)) {
             out.write(TEST_DATA.getBytes(Charsets.UTF_8));
         }
