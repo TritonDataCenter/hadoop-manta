@@ -13,7 +13,6 @@ import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_TRANSPO
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MAX_CONNS;
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_SIGNATURE_CACHE_TTL;
-import static com.joyent.manta.config.DefaultsConfigContext.MANTA_KEY_PATH;
 
 /**
  * Manta configuration context implementation that wraps the Hadoop {@link Configuration}
@@ -51,7 +50,7 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public String getMantaKeyPath() {
-        return configuration.get(MapConfigContext.MANTA_KEY_PATH_KEY, MANTA_KEY_PATH);
+        return configuration.get(MapConfigContext.MANTA_KEY_PATH_KEY);
     }
 
     @Override
