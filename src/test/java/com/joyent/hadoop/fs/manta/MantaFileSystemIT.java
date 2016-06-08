@@ -4,6 +4,7 @@ import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.exception.MantaClientHttpResponseException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
@@ -61,18 +62,28 @@ public class MantaFileSystemIT {
 
         basePath = String.format("%s/stor/%s/",
                 config.getMantaHomeDirectory(), UUID.randomUUID());
-        client.putDirectory(basePath);
+
+        try {
+            client.putDirectory(basePath);
+        } catch (MantaClientHttpResponseException e) {
+            if (e.getStatusCode() == 403) {
+                throw new IOException("You must have Manta credentials setup to "
+                        + "run the integration test suite");
+            }
+        }
     }
 
     @AfterClass
     public static void cleanup() throws IOException {
-        if (client != null) {
-            client.deleteRecursive(basePath);
-            client = null;
+        try {
+            if (client != null) {
+                client.deleteRecursive(basePath);
+                client = null;
+            }
+        } finally {
+            config = null;
+            fs.close();
         }
-
-        config = null;
-        fs.close();
     }
 
     @Before
