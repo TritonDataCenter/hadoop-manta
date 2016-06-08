@@ -352,7 +352,7 @@ Compression format:
   8 : CUSTOM
 Choose: 0
 Custom compression format: 
-Output directory: manta:///elijah.zupancic/stor/sqoop
+Output directory: manta:///username/stor/sqoop
 Append mode: 
 
 Throttling resources
@@ -360,6 +360,11 @@ Throttling resources
 Extractors: 
 Loaders: 
 New job was successfully created with validation status OK  and persistent id 1
+```
+
+Then the job can be run. Be sure that the directory specified in the job above
+is empty or else the job will fail.
+
 ```
 sqoop:000> start job -j 1
 Submission details
@@ -374,6 +379,7 @@ External ID: job_local2015389814_0002
 ```
 
 This job then dumped the output its output in /username/stor/sqoop:
+
 ```
 $ mls ~~/stor/sqoop/
 223d3e02-5a80-4cef-8a04-302511680a7a.txt
