@@ -88,7 +88,7 @@ public class MantaChecksum extends FileChecksum {
      * Serialize the fields of this object to <code>out</code>.
      *
      * @param out <code>DataOuput</code> to serialize this object into.
-     * @throws IOException
+     * @throws IOException thrown when bytes can be written
      */
     @Override
     public void write(final DataOutput out) throws IOException {
@@ -99,12 +99,12 @@ public class MantaChecksum extends FileChecksum {
 
     /**
      * Deserialize the fields of this object from <code>in</code>.
-     * <p>
+     *
      * <p>For efficiency, implementations should attempt to re-use storage in the
      * existing object where possible.</p>
      *
      * @param in <code>DataInput</code> to deseriablize this object from.
-     * @throws IOException
+     * @throws IOException thrown when bytes can be read
      */
     @Override
     public void readFields(final DataInput in) throws IOException {
