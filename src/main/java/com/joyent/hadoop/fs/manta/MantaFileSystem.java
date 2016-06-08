@@ -15,7 +15,9 @@ import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.MantaSeekableByteChannel;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.SystemSettingsConfigContext;
+import com.joyent.manta.config.DefaultsConfigContext;
+import com.joyent.manta.config.EnvVarConfigContext;
+import com.joyent.manta.config.MapConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -147,8 +149,10 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         super.initialize(name, conf);
 
         ChainedConfigContext chained = new ChainedConfigContext(
-                new SystemSettingsConfigContext(),
-                new HadoopConfigurationContext(conf)
+                new EnvVarConfigContext(),
+                new MapConfigContext(System.getProperties()),
+                new HadoopConfigurationContext(conf),
+                new DefaultsConfigContext()
         );
 
         this.config = chained;
