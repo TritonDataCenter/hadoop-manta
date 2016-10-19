@@ -151,9 +151,20 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         ChainedConfigContext chained = new ChainedConfigContext(
                 new EnvVarConfigContext(),
                 new MapConfigContext(System.getProperties()),
-                new HadoopConfigurationContext(conf),
-                new DefaultsConfigContext()
+                new HadoopConfigurationContext(conf)
         );
+
+        final DefaultsConfigContext defaultContext = new DefaultsConfigContext();
+
+        /* Primitive hack to keep configuration from error because private key content
+         * was set at the same time as a key path. */
+        if (chained.getPrivateKeyContent() != null) {
+            final ChainedConfigContext overwritableDefaults = new ChainedConfigContext();
+            overwritableDefaults.setMantaKeyPath(null);
+            chained.overwriteWithContext(overwritableDefaults);
+        } else {
+            chained.overwriteWithContext(defaultContext);
+        }
 
         this.config = chained;
         this.client = new MantaClient(this.config);
