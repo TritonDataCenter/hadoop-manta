@@ -5,6 +5,7 @@ import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.exception.MantaErrorCode;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
@@ -42,6 +43,7 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.internal.verification.VerificationModeFactory.atLeast;
 
@@ -66,9 +68,9 @@ public class MantaFileSystemIT {
         try {
             client.putDirectory(basePath);
         } catch (MantaClientHttpResponseException e) {
-            if (e.getStatusCode() == 403) {
+            if (e.getServerCode().equals(MantaErrorCode.ACCOUNT_BLOCKED_ERROR)) {
                 throw new IOException("You must have Manta credentials setup to "
-                        + "run the integration test suite");
+                        + "run the integration test suite", e);
             }
         }
     }
@@ -82,7 +84,7 @@ public class MantaFileSystemIT {
             }
         } finally {
             config = null;
-            fs.close();
+            FileSystem.closeAll();
         }
     }
 
@@ -99,7 +101,10 @@ public class MantaFileSystemIT {
 
         try {
             FileSystem fs = FileSystem.get(uri, config);
-            @SuppressWarnings("unchecked")
+
+            if (!(fs instanceof MantaFileSystem)) {
+                fail("FileSystem should be an instance of MantaFileSystem");
+            }
             MantaFileSystem mfs = (MantaFileSystem)fs;
 
             return mfs;

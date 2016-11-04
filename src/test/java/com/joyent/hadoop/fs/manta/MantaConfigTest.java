@@ -2,6 +2,7 @@ package com.joyent.hadoop.fs.manta;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -10,6 +11,11 @@ import java.net.URI;
 import static org.junit.Assert.assertTrue;
 
 public class MantaConfigTest {
+    @AfterClass
+    public static void cleanUp() throws IOException {
+        FileSystem.closeAll();
+    }
+
     @Test
     public void hadoopCanLoadFilesystemFromServiceLoader() throws IOException {
         final Configuration config = new Configuration();
