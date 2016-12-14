@@ -214,7 +214,7 @@ In the *Configuration* text box, paste the following:
       "extensions": [
         "json"
       ]
-    }
+    },
     "avro": {
       "type": "avro"
     },
