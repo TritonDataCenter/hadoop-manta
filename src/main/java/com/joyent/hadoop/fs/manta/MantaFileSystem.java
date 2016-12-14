@@ -150,13 +150,10 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         super.initialize(name, conf);
 
         ChainedConfigContext chained = new ChainedConfigContext(
-                new DefaultsConfigContext(),
                 new EnvVarConfigContext(),
                 new MapConfigContext(System.getProperties()),
                 new HadoopConfigurationContext(conf)
         );
-
-        dumpConfig(chained);
 
         final DefaultsConfigContext defaultContext = new DefaultsConfigContext();
 
@@ -169,6 +166,8 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         } else {
             chained.overwriteWithContext(defaultContext);
         }
+
+        dumpConfig(chained);
 
         this.config = chained;
         this.client = new MantaClient(this.config);
@@ -187,6 +186,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
             System.out.println("========================================");
             System.out.println("Configuration Context was null");
             System.out.println("========================================");
+            return;
         }
 
         String dumpConfigVal = System.getProperty("manta.dumpConfig");
