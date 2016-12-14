@@ -3,16 +3,7 @@ package com.joyent.hadoop.fs.manta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
-import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaDirectoryListingIterator;
-import com.joyent.manta.client.MantaHttpHeaders;
-import com.joyent.manta.client.MantaJobBuilder;
-import com.joyent.manta.client.MantaJobPhase;
-import com.joyent.manta.client.MantaObject;
-import com.joyent.manta.client.MantaObjectInputStream;
-import com.joyent.manta.client.MantaObjectOutputStream;
-import com.joyent.manta.client.MantaObjectResponse;
-import com.joyent.manta.client.MantaSeekableByteChannel;
+import com.joyent.manta.client.*;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
@@ -149,10 +140,13 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         super.initialize(name, conf);
 
         ChainedConfigContext chained = new ChainedConfigContext(
+                new DefaultsConfigContext(),
                 new EnvVarConfigContext(),
                 new MapConfigContext(System.getProperties()),
                 new HadoopConfigurationContext(conf)
         );
+
+        dumpConfig(chained);
 
         final DefaultsConfigContext defaultContext = new DefaultsConfigContext();
 
@@ -170,6 +164,27 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         this.client = new MantaClient(this.config);
 
         this.workingDir = getInitialWorkingDirectory();
+    }
+
+    /**
+     * Dumps the configuration that is used to load a {@link MantaClient} if
+     * the Java system property manta.dumpConfig is set.
+     *
+     * @param context Configuration context object to dump
+     */
+    private static void dumpConfig(final ConfigContext context) {
+        if (context == null) {
+            System.out.println("========================================");
+            System.out.println("Configuration Context was null");
+            System.out.println("========================================");
+        }
+
+        String dumpConfigVal = System.getProperty("manta.dumpConfig");
+        if (dumpConfigVal != null && MantaUtils.parseBooleanOrNull(dumpConfigVal)) {
+            System.out.println("========================================");
+            System.out.println(ConfigContext.toString(context));
+            System.out.println("========================================");
+        }
     }
 
     /**
