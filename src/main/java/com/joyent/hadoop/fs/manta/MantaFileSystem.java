@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaDirectoryListingIterator;
-import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaJobBuilder;
 import com.joyent.manta.client.MantaJobPhase;
 import com.joyent.manta.client.MantaObject;
@@ -13,13 +12,14 @@ import com.joyent.manta.client.MantaObjectInputStream;
 import com.joyent.manta.client.MantaObjectOutputStream;
 import com.joyent.manta.client.MantaObjectResponse;
 import com.joyent.manta.client.MantaSeekableByteChannel;
-import com.joyent.manta.client.MantaUtils;
 import com.joyent.manta.config.ChainedConfigContext;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.DefaultsConfigContext;
 import com.joyent.manta.config.EnvVarConfigContext;
 import com.joyent.manta.config.MapConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
+import com.joyent.manta.http.MantaHttpHeaders;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -152,20 +152,9 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         ChainedConfigContext chained = new ChainedConfigContext(
                 new EnvVarConfigContext(),
                 new MapConfigContext(System.getProperties()),
-                new HadoopConfigurationContext(conf)
+                new HadoopConfigurationContext(conf),
+                new DefaultsConfigContext()
         );
-
-        final DefaultsConfigContext defaultContext = new DefaultsConfigContext();
-
-        /* Primitive hack to keep configuration from error because private key content
-         * was set at the same time as a key path. */
-        if (chained.getPrivateKeyContent() != null) {
-            final ChainedConfigContext overwritableDefaults = new ChainedConfigContext();
-            overwritableDefaults.setMantaKeyPath(null);
-            chained.overwriteWithContext(overwritableDefaults);
-        } else {
-            chained.overwriteWithContext(defaultContext);
-        }
 
         dumpConfig(chained);
 

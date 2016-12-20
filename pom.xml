@@ -61,7 +61,7 @@
         <failsafe.useSystemClassLoader>true</failsafe.useSystemClassLoader>
         <!-- Dependency versions -->
         <dependency.checkstyle.version>6.17</dependency.checkstyle.version>
-        <dependency.java-manta.version>2.7.1</dependency.java-manta.version>
+        <dependency.java-manta.version>3.0.0-SNAPSHOT</dependency.java-manta.version>
         <dependency.testng.version>6.9.9</dependency.testng.version>
         <dependency.hadoop.version>2.7.3</dependency.hadoop.version>
         <dependency.mockito.version>2.0.2-beta</dependency.mockito.version>
