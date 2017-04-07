@@ -2,7 +2,7 @@ package com.joyent.hadoop.fs.manta;
 
 import com.google.common.base.Preconditions;
 import com.joyent.manta.config.ConfigContext;
-import com.joyent.manta.config.EncryptionObjectAuthenticationMode;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.MapConfigContext;
 import com.joyent.manta.util.MantaUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -11,7 +11,6 @@ import java.util.Base64;
 
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTPS_CIPHERS;
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTPS_PROTOCOLS;
-import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_TRANSPORT;
 
 /**
  * Manta configuration context implementation that wraps the Hadoop {@link Configuration}
@@ -83,11 +82,6 @@ public class HadoopConfigurationContext implements ConfigContext {
     }
 
     @Override
-    public String getHttpTransport() {
-        return configuration.get(MapConfigContext.MANTA_HTTP_TRANSPORT_KEY, DEFAULT_HTTP_TRANSPORT);
-    }
-
-    @Override
     public String getHttpsProtocols() {
         return configuration.get(MapConfigContext.MANTA_HTTPS_PROTOCOLS_KEY, DEFAULT_HTTPS_PROTOCOLS);
     }
@@ -108,11 +102,6 @@ public class HadoopConfigurationContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        return getIntDefaultToNull(MapConfigContext.MANTA_SIGS_CACHE_TTL_KEY);
-    }
-
-    @Override
     public Boolean isClientEncryptionEnabled() {
         return getBooleanDefaultToNull(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY);
     }
@@ -123,7 +112,7 @@ public class HadoopConfigurationContext implements ConfigContext {
     }
 
     @Override
-    public EncryptionObjectAuthenticationMode getEncryptionAuthenticationMode() {
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
         String val = configuration.get(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY);
 
         if (val == null) {
@@ -136,7 +125,7 @@ public class HadoopConfigurationContext implements ConfigContext {
             return null;
         }
 
-        return EncryptionObjectAuthenticationMode.valueOf(val);
+        return EncryptionAuthenticationMode.valueOf(val);
     }
 
     @Override
@@ -159,6 +148,36 @@ public class HadoopConfigurationContext implements ConfigContext {
         }
 
         return Base64.getDecoder().decode(base64);
+    }
+
+    @Override
+    public Integer getHttpBufferSize() {
+        return getIntDefaultToNull(MapConfigContext.MANTA_HTTP_BUFFER_SIZE_KEY);
+    }
+
+    @Override
+    public Integer getTcpSocketTimeout() {
+        return getIntDefaultToNull(MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY);
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        return getBooleanDefaultToNull(MapConfigContext.MANTA_VERIFY_UPLOADS_KEY);
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        return getIntDefaultToNull(MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY);
+    }
+
+    @Override
+    public String getEncryptionKeyId() {
+        return configuration.get(MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY);
+    }
+
+    @Override
+    public String getEncryptionAlgorithm() {
+        return configuration.get(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY);
     }
 
     /**
