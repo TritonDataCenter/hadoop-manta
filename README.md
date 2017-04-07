@@ -32,7 +32,7 @@ This project is licensed under the [Apache 2.0 license](LICENSE.txt).
 
 ## Run Requirements
  * Java 8
- * Hadoop 2.7.3
+ * Hadoop 2.8.0
  * A running instance of the Manta object store ([available on the public cloud](https://www.joyent.com/object-storage))
 
 ## Build Requirements
@@ -108,7 +108,7 @@ Time in milliseconds to cache the HTTP signature authorization header. A setting
 
 ## Hadoop Installation
 
-*Note: These instructions are for Hadoop 2.7.3.*
+*Note: These instructions are for Hadoop 2.8.0.*
 
 To install in Hadoop, copy the jar file `hadoop-manta-x.x-jar-with-dependencies.jar`
 to `$HADOOP_HOME/share/hadoop/common/lib/`.
@@ -129,7 +129,7 @@ You will need a setting in the core-site.xml file like:
 Then start Hadoop or any of the Hadoop CLI utilities. For example:
 
 ```
-➜  hadoop-2.7.3 ./bin/hdfs dfs -ls 'manta:///username/'
+➜  hadoop-2.8.0 ./bin/hdfs dfs -ls 'manta:///username/'
 Found 4 items
 drwxrwxrwx   -          1 2013-05-22 10:39 manta:///username/jobs
 drwxrwxrwx   -          1 2013-05-22 10:39 manta:///username/public
@@ -140,7 +140,7 @@ drwxrwxrwx   -          1 2013-05-22 10:39 manta:///username/stor
 or:
 
 ```
-➜  hadoop-2.7.3 ./bin/hadoop fs -ls 'manta:///username/'
+➜  hadoop-2.8.0 ./bin/hadoop fs -ls 'manta:///username/'
 
 Found 4 items
 drwxrwxrwx   -          1 2013-05-22 10:39 manta:///username/jobs
@@ -327,7 +327,7 @@ Name: Manta
 Link configuration
 
 HDFS URI: manta:///username/stor/sqoop
-Hadoop conf directory: /opt/hadoop-2.7.3/etc/hadoop
+Hadoop conf directory: /opt/hadoop-2.8.0/etc/hadoop
 New link was successfully created with validation status OK and persistent id 2
 ```
 

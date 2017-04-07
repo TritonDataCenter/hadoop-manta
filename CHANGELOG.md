@@ -2,10 +2,14 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.5] - 2016-04-07
+### Changed
+ - Upgraded Java Manta SDK to 3.0.0.
+ - Upgraded Hadoop to 2.8.0.
+ 
 ## [1.0.4] - 2016-11-03
 ### Added
  - Added configuration dump system property: manta.configDump
-
 
 ## [1.0.3] - 2016-11-03
 ### Changed

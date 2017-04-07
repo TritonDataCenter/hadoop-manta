@@ -2,17 +2,15 @@ package com.joyent.hadoop.fs.manta;
 
 import com.google.common.base.Preconditions;
 import com.joyent.manta.config.ConfigContext;
+import com.joyent.manta.config.EncryptionAuthenticationMode;
 import com.joyent.manta.config.MapConfigContext;
+import com.joyent.manta.util.MantaUtils;
 import org.apache.hadoop.conf.Configuration;
+
+import java.util.Base64;
 
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTPS_CIPHERS;
 import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTPS_PROTOCOLS;
-import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_RETRIES;
-import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_TIMEOUT;
-import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_HTTP_TRANSPORT;
-import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MANTA_URL;
-import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_MAX_CONNS;
-import static com.joyent.manta.config.DefaultsConfigContext.DEFAULT_SIGNATURE_CACHE_TTL;
 
 /**
  * Manta configuration context implementation that wraps the Hadoop {@link Configuration}
@@ -35,7 +33,7 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public String getMantaURL() {
-        return configuration.get(MapConfigContext.MANTA_URL_KEY, DEFAULT_MANTA_URL);
+        return configuration.get(MapConfigContext.MANTA_URL_KEY);
     }
 
     @Override
@@ -65,7 +63,7 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public Integer getTimeout() {
-        return configuration.getInt(MapConfigContext.MANTA_TIMEOUT_KEY, DEFAULT_HTTP_TIMEOUT);
+        return getIntDefaultToNull(MapConfigContext.MANTA_TIMEOUT_KEY);
     }
 
     @Override
@@ -75,17 +73,12 @@ public class HadoopConfigurationContext implements ConfigContext {
 
     @Override
     public Integer getRetries() {
-        return configuration.getInt(MapConfigContext.MANTA_RETRIES_KEY, DEFAULT_HTTP_RETRIES);
+        return getIntDefaultToNull(MapConfigContext.MANTA_RETRIES_KEY);
     }
 
     @Override
     public Integer getMaximumConnections() {
-        return configuration.getInt(MapConfigContext.MANTA_MAX_CONNS_KEY, DEFAULT_MAX_CONNS);
-    }
-
-    @Override
-    public String getHttpTransport() {
-        return configuration.get(MapConfigContext.MANTA_HTTP_TRANSPORT_KEY, DEFAULT_HTTP_TRANSPORT);
+        return getIntDefaultToNull(MapConfigContext.MANTA_MAX_CONNS_KEY);
     }
 
     @Override
@@ -109,7 +102,149 @@ public class HadoopConfigurationContext implements ConfigContext {
     }
 
     @Override
-    public Integer getSignatureCacheTTL() {
-        return configuration.getInt(MapConfigContext.MANTA_SIGS_CACHE_TTL_KEY, DEFAULT_SIGNATURE_CACHE_TTL);
+    public Boolean isClientEncryptionEnabled() {
+        return getBooleanDefaultToNull(MapConfigContext.MANTA_CLIENT_ENCRYPTION_ENABLED_KEY);
+    }
+
+    @Override
+    public Boolean permitUnencryptedDownloads() {
+        return getBooleanDefaultToNull(MapConfigContext.MANTA_PERMIT_UNENCRYPTED_DOWNLOADS_KEY);
+    }
+
+    @Override
+    public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
+        String val = configuration.get(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY);
+
+        if (val == null) {
+            return null;
+        }
+
+        String valueString = val.trim();
+
+        if (valueString.isEmpty()) {
+            return null;
+        }
+
+        return EncryptionAuthenticationMode.valueOf(val);
+    }
+
+    @Override
+    public String getEncryptionPrivateKeyPath() {
+        return configuration.get(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_PATH_KEY);
+    }
+
+    @Override
+    public byte[] getEncryptionPrivateKeyBytes() {
+        String base64 = configuration.get(MapConfigContext.MANTA_ENCRYPTION_PRIVATE_KEY_BYTES_BASE64_KEY);
+
+        if (base64 == null) {
+            return null;
+        }
+
+        String valueString = base64.trim();
+
+        if (valueString.isEmpty()) {
+            return null;
+        }
+
+        return Base64.getDecoder().decode(base64);
+    }
+
+    @Override
+    public Integer getHttpBufferSize() {
+        return getIntDefaultToNull(MapConfigContext.MANTA_HTTP_BUFFER_SIZE_KEY);
+    }
+
+    @Override
+    public Integer getTcpSocketTimeout() {
+        return getIntDefaultToNull(MapConfigContext.MANTA_TCP_SOCKET_TIMEOUT_KEY);
+    }
+
+    @Override
+    public Boolean verifyUploads() {
+        return getBooleanDefaultToNull(MapConfigContext.MANTA_VERIFY_UPLOADS_KEY);
+    }
+
+    @Override
+    public Integer getUploadBufferSize() {
+        return getIntDefaultToNull(MapConfigContext.MANTA_UPLOAD_BUFFER_SIZE_KEY);
+    }
+
+    @Override
+    public String getEncryptionKeyId() {
+        return configuration.get(MapConfigContext.MANTA_ENCRYPTION_KEY_ID_KEY);
+    }
+
+    @Override
+    public String getEncryptionAlgorithm() {
+        return configuration.get(MapConfigContext.MANTA_ENCRYPTION_ALGORITHM_KEY);
+    }
+
+    /**
+     * Get the value of the <code>name</code> property as an <code>int</code>.
+     *
+     * If no such property exists, null is returned.
+     *
+     * @param name property name.
+     * @throws NumberFormatException when the value is invalid
+     * @return property value as an <code>int</code>,
+     *         or <code>null</code>.
+     */
+    @SuppressWarnings("MagicNumber")
+    private Integer getIntDefaultToNull(final String name) {
+        String val = configuration.get(name);
+
+        if (val == null) {
+            return null;
+        }
+
+        String valueString = val.trim();
+
+        if (valueString.isEmpty()) {
+            return null;
+        }
+
+        String hexString = getHexDigits(valueString);
+        if (hexString != null) {
+            return Integer.parseInt(hexString, 16);
+        }
+        return Integer.parseInt(valueString);
+    }
+
+    /**
+     * Get the value of the <code>name</code> property as a <code>boolean</code>.
+     * If no such property is specified, or if the specified value is not a valid
+     * <code>boolean</code>, then <code>null</code> is returned.
+     *
+     * @param name property name.
+     * @return property value as a <code>boolean</code>,
+     *         or <code>null</code>.
+     */
+    private Boolean getBooleanDefaultToNull(final String name) {
+        return MantaUtils.parseBooleanOrNull(name);
+    }
+
+    /**
+     * Reformats a hex string so it can be parsed from {@link Integer#parseInt(String, int)}.
+     * This is a copy of {@link org.apache.hadoop.conf.Configuration#getHexDigits(String)}
+     * @param value value to reformat
+     * @return hex string or null
+     */
+    private String getHexDigits(final String value) {
+        boolean negative = false;
+        String str = value;
+        String hexString;
+        if (value.startsWith("-")) {
+            negative = true;
+            str = value.substring(1);
+        }
+        if (str.startsWith("0x") || str.startsWith("0X")) {
+            hexString = str.substring(2);
+            if (negative) {
+                hexString = "-" + hexString;
+            }
+            return hexString;
+        }
+        return null;
     }
 }

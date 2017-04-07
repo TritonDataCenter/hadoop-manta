@@ -1,11 +1,11 @@
 package com.joyent.hadoop.fs.manta;
 
 import com.joyent.manta.client.MantaClient;
-import com.joyent.manta.client.MantaHttpHeaders;
 import com.joyent.manta.client.MantaObject;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.exception.MantaClientHttpResponseException;
 import com.joyent.manta.exception.MantaErrorCode;
+import com.joyent.manta.http.MantaHttpHeaders;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;

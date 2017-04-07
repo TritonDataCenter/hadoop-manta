@@ -2,9 +2,9 @@ package com.joyent.hadoop.fs.manta;
 
 import com.joyent.manta.client.MantaClient;
 import com.joyent.manta.client.MantaSeekableByteChannel;
-import com.joyent.manta.client.MantaUtils;
 import com.joyent.manta.config.ConfigContext;
 import com.joyent.manta.config.SystemSettingsConfigContext;
+import com.joyent.manta.org.apache.commons.io.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -50,7 +51,7 @@ public class MantaSeekableInputStreamIT {
 
         final MantaSeekableByteChannel seekable = mantaClient.getSeekableByteChannel(path);
         try (MantaSeekableInputStream in = new MantaSeekableInputStream(seekable)) {
-            final String actual = MantaUtils.inputStreamToString(in);
+            final String actual = IOUtils.toString(in, Charset.defaultCharset());
             assertEquals("Object data isn't equal", TEST_DATA, actual);
         }
     }
@@ -77,7 +78,7 @@ public class MantaSeekableInputStreamIT {
 
             // The last operation shouldn't have moved the position, so we are
             // safe to read the whole stream now and get the whole thing
-            final String all = MantaUtils.inputStreamToString(in);
+            final String all = IOUtils.toString(in, Charset.defaultCharset());
             assertEquals("Object data isn't equal", TEST_DATA, all);
         }
     }
@@ -105,7 +106,7 @@ public class MantaSeekableInputStreamIT {
 
             // The last operation shouldn't have moved the position, so we are
             // safe to read the whole stream now and get the whole thing
-            final String all = MantaUtils.inputStreamToString(in);
+            final String all = IOUtils.toString(in, Charset.defaultCharset());
             assertEquals("Object data isn't equal", TEST_DATA.substring(5), all);
         }
     }

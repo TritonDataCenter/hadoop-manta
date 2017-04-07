@@ -61,9 +61,9 @@
         <failsafe.useSystemClassLoader>true</failsafe.useSystemClassLoader>
         <!-- Dependency versions -->
         <dependency.checkstyle.version>6.17</dependency.checkstyle.version>
-        <dependency.java-manta.version>2.7.1</dependency.java-manta.version>
+        <dependency.java-manta.version>3.0.0</dependency.java-manta.version>
         <dependency.testng.version>6.9.9</dependency.testng.version>
-        <dependency.hadoop.version>2.7.3</dependency.hadoop.version>
+        <dependency.hadoop.version>2.8.0</dependency.hadoop.version>
         <dependency.mockito.version>2.0.2-beta</dependency.mockito.version>
 
         <!-- Plugin versions -->
@@ -149,7 +149,7 @@
                             <url>http://www-us.apache.org/dist/hadoop/common/hadoop-${dependency.hadoop.version}/hadoop-${dependency.hadoop.version}.tar.gz</url>
                             <unpack>true</unpack>
                             <outputDirectory>${project.build.directory}/hadoop_home</outputDirectory>
-                            <md5>3455bb57e4b4906bbea67b58cca78fa8</md5>
+                            <md5>c728a090b68d009070085367695ed507</md5>
                         </configuration>
                     </execution>
                 </executions>
