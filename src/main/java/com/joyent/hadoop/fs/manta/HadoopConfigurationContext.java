@@ -190,6 +190,7 @@ public class HadoopConfigurationContext implements ConfigContext {
      * @return property value as an <code>int</code>,
      *         or <code>null</code>.
      */
+    @SuppressWarnings("MagicNumber")
     private Integer getIntDefaultToNull(final String name) {
         String val = configuration.get(name);
 
