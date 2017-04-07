@@ -149,7 +149,7 @@
                             <url>http://www-us.apache.org/dist/hadoop/common/hadoop-${dependency.hadoop.version}/hadoop-${dependency.hadoop.version}.tar.gz</url>
                             <unpack>true</unpack>
                             <outputDirectory>${project.build.directory}/hadoop_home</outputDirectory>
-                            <md5>3455bb57e4b4906bbea67b58cca78fa8</md5>
+                            <md5>c728a090b68d009070085367695ed507</md5>
                         </configuration>
                     </execution>
                 </executions>
