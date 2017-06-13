@@ -6,7 +6,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
  - Upgraded Java Manta SDK to 3.1.0.
 
-## [1.0.4] - 2016-04-07
+## [1.0.4] - 2017-04-07
 ### Added
  - Added configuration dump system property: manta.configDump
 ### Changed
