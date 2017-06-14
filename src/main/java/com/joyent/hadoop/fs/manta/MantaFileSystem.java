@@ -197,7 +197,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
     @Override
     public URI getUri() {
-        return this.ROOT_MANTA_URI;
+        return ROOT_MANTA_URI;
     }
 
     @Override
