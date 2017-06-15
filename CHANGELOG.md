@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.6] - 2017-06-15
+### Changed
+ - Upgraded Java Manta SDK to 3.1.1.
+ - move() operations now will move files into uncreated directories.
+
 ## [1.0.5] - 2017-06-08
 ### Changed
  - Upgraded Java Manta SDK to 3.1.0.

@@ -779,7 +779,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         LOG.debug("Moving [{}] to [{}]", original, newName);
 
-        client.move(source, destination);
+        client.move(source, destination, true);
 
         return client.existsAndIsAccessible(destination);
     }
@@ -806,7 +806,9 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
             throw new IllegalArgumentException(String.format("Invalid path: %s", path));
         }
 
-        return StringUtils.removeStart(mantaPath, "manta:");
+        String withoutPrefix = StringUtils.removeStart(mantaPath, "manta:");
+
+        return FilenameUtils.normalize(withoutPrefix, true);
     }
 
     /**
