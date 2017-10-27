@@ -22,7 +22,7 @@ behavior.
  * Truncate is only supported for truncating a file to zero bytes.
  * Checksums are performed using md5.
  * Checksums for portions of large files are done remotely using Manta jobs.
- * Disk space used statistics are based on usage reports which aren't updated
+ * Disk space use statistics are based on usage reports which aren't updated
    instantaneously.
  * Globally the default replication factor is 2.
  * No assumptions about blocksize are made.
