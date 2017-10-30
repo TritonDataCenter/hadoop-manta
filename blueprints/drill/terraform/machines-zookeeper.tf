@@ -5,6 +5,11 @@ resource "triton_machine" "zookeeper" {
 
   firewall_enabled = true
 
+  networks = [
+    "${data.triton_network.private.id}",
+    "${data.triton_network.public.id}",
+  ]
+
   cns {
     services = ["${local.cns_service_zookeeper}"]
   }

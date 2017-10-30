@@ -45,6 +45,11 @@ variable "triton_region" {
   description = "The region to provision resources within."
 }
 
+variable "network_name_private" {
+  default     = "My-Fabric-Network"
+  description = "The network name for private network access.."
+}
+
 variable "count_drill_workers" {
   default     = "3"
   description = "The number of Drill workers to provision."
@@ -94,22 +99,33 @@ data "triton_image" "ubuntu" {
   most_recent = true
 }
 
+# TODO(clstokes): this configuration will eventually be a module and networks
+# will be provided as an input variable so that only private networks
+# can be used.
+data "triton_network" "public" {
+  name = "Joyent-SDC-Public"
+}
+
+data "triton_network" "private" {
+  name = "${var.network_name_private}"
+}
+
 #
 # Locals
 #
 locals {
-  cns_service_drill         = "drill"
-  cns_service_zookeeper     = "zookeeper"
-  address_zookeeper         = "${local.cns_service_zookeeper}.svc.${var.triton_account_uuid}.${var.triton_region}.cns.joyent.com"
+  cns_service_drill     = "drill"
+  cns_service_zookeeper = "zookeeper"
+  address_zookeeper     = "${local.cns_service_zookeeper}.svc.${var.triton_account_uuid}.${var.triton_region}.cns.joyent.com"
 }
 
 #
 # Outputs
 #
 output "drill_ip_public" {
-  value = "${triton_machine.drill.*.primaryip}"
+  value = ["${triton_machine.drill.*.primaryip}"]
 }
 
 output "zookeeper_ip_public" {
-  value = "${triton_machine.zookeeper.primaryip}"
+  value = ["${triton_machine.zookeeper.*.primaryip}"]
 }

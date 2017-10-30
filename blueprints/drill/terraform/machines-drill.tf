@@ -8,6 +8,11 @@ resource "triton_machine" "drill" {
 
   firewall_enabled = true
 
+  networks = [
+    "${data.triton_network.private.id}",
+    "${data.triton_network.public.id}",
+  ]
+
   cns {
     services = ["${local.cns_service_drill}"]
   }
