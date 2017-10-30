@@ -117,6 +117,9 @@ locals {
   cns_service_drill     = "drill"
   cns_service_zookeeper = "zookeeper"
   address_zookeeper     = "${local.cns_service_zookeeper}.svc.${var.triton_account_uuid}.${var.triton_region}.cns.joyent.com"
+
+  tag_role_drill     = "${var.project_name}-drill"
+  tag_role_zookeeper = "${var.project_name}-zookeeper"
 }
 
 #

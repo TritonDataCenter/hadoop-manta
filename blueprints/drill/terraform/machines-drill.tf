@@ -2,7 +2,7 @@ resource "triton_machine" "drill" {
   count = "${var.count_drill_workers}"
 
   # NOTE: the machine name is used by Triton CNS and in drill-env.sh in the drill install script
-  name    = "${var.project_name}-drill-${count.index}"
+  name    = "${local.tag_role_drill}-${count.index}"
   package = "${var.machine_package_zone}"
   image   = "${data.triton_image.ubuntu.id}"
 
@@ -12,6 +12,10 @@ resource "triton_machine" "drill" {
     "${data.triton_network.private.id}",
     "${data.triton_network.public.id}",
   ]
+
+  tags {
+    role = "${local.tag_role_drill}"
+  }
 
   cns {
     services = ["${local.cns_service_drill}"]
@@ -35,9 +39,10 @@ resource "triton_machine" "drill" {
     # explicitly depend on the zookeeper machine because we're using the CNS address
     # and not directly depending on the resource otherwise
     "triton_machine.zookeeper",
-
-    "triton_firewall_rule.all",
     "null_resource.zookeeper_install",
+
+    "triton_firewall_rule.drill_to_drill",
+    "triton_firewall_rule.drill_to_zookeeper",
   ]
 }
 

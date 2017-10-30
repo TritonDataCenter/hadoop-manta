@@ -1,5 +1,5 @@
 resource "triton_machine" "zookeeper" {
-  name    = "${var.project_name}-zookeeper"
+  name    = "${local.tag_role_zookeeper}"
   package = "${var.machine_package_zone}"
   image   = "${data.triton_image.ubuntu.id}"
 
@@ -10,6 +10,10 @@ resource "triton_machine" "zookeeper" {
     "${data.triton_network.public.id}",
   ]
 
+  tags {
+    role = "${local.tag_role_zookeeper}"
+  }
+
   cns {
     services = ["${local.cns_service_zookeeper}"]
   }
@@ -17,6 +21,10 @@ resource "triton_machine" "zookeeper" {
   metadata {
     version_zookeeper = "${var.version_zookeeper}"
   }
+
+  depends_on = [
+    "triton_firewall_rule.zookeeper_to_zookeeper",
+  ]
 }
 
 # This is separate from the triton_machine resource, because the firewall ports
