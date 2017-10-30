@@ -415,7 +415,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         /* We emulate a normal filesystem by showing the home directory under root in
          * in order to provide compatibility with consumers that expect this behavior. */
-        if (mantaPath.equals("/")) {
+        if (mantaPath.equals(MantaClient.SEPARATOR)) {
             return new FileStatus[] {new MantaFileStatus(true, getHomeDirectory())};
         }
 
@@ -441,7 +441,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
 
         /* We emulate a normal filesystem by showing the home directory under root in
          * in order to provide compatibility with consumers that expect this behavior. */
-        if (mantaPath.equals("/")) {
+        if (mantaPath.equals(MantaClient.SEPARATOR)) {
             LocatedFileStatus singleEntry = new LocatedFileStatus(new MantaFileStatus(true, path), null);
             return new SingleEntryRemoteIterator<>(singleEntry);
         }
@@ -487,7 +487,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
         String mantaPath = mantaPath(path);
         LOG.debug("Getting path status for: {}", mantaPath);
 
-        if (mantaPath.equals("/")) {
+        if (mantaPath.equals(MantaClient.SEPARATOR)) {
             return MantaFileStatus.ROOT;
         }
 

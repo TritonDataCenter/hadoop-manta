@@ -1,6 +1,5 @@
 project_name = "drill-cluster"
 triton_account_uuid = ""
-hive_db_password = ""
 
 manta_user = "your_account_name"
 manta_key_id = "00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd:ee:ff"

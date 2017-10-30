@@ -41,12 +41,12 @@ variable "manta_key" {
 # Default Variables.
 #
 variable "triton_region" {
-  default     = "us-east-1"
+  default     = "us-east-3b"
   description = "The region to provision resources within."
 }
 
 variable "count_drill_workers" {
-  default     = "2"
+  default     = "3"
   description = "The number of Drill workers to provision."
 }
 
@@ -83,11 +83,6 @@ variable "version_drill" {
 variable "version_zookeeper" {
   default     = "3.4.10"
   description = "The version of Zookeeper to install. See https://zookeeper.apache.org/releases.html."
-}
-
-variable "hive_db_username" {
-  default     = "hive"
-  description = "The username for Hive to connect to the database."
 }
 
 #

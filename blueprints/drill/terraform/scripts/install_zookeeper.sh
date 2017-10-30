@@ -5,7 +5,23 @@
 # Note: Generally follows guidelines at https://web.archive.org/web/20170701145736/https://google.github.io/styleguide/shell.xml.
 #
 
-set -e
+# Here we redirect the STDOUT and the STDERR to a log file so that we can debug
+# things when they go wrong when starting up an instance.
+
+# Close STDOUT file descriptor
+exec 1<&-
+# Close STDERR FD
+exec 2<&-
+
+# Open STDOUT as $LOG_FILE file for read and write.
+exec 1<>/var/log/install-`date +%s`.log
+
+# Redirect STDERR to STDOUT
+exec 2>&1
+
+set -o errexit
+set -o pipefail
+set -o nounset
 
 # check_prerequisites - exits if distro is not supported.
 #
