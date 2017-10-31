@@ -1,6 +1,6 @@
 resource "triton_machine" "zookeeper" {
   name    = "${local.tag_role_zookeeper}"
-  package = "${var.machine_package_zone}"
+  package = "${var.machine_zookeeper_package_zone}"
   image   = "${data.triton_image.ubuntu.id}"
 
   firewall_enabled = true

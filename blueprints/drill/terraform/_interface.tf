@@ -41,7 +41,7 @@ variable "manta_key" {
 # Default Variables.
 #
 variable "triton_region" {
-  default     = "us-east-3b"
+  default     = "us-east-1"
   description = "The region to provision resources within."
 }
 
@@ -65,8 +65,13 @@ variable "key_path_private" {
   description = "Path to the private key to use for connecting to machines."
 }
 
-variable "machine_package_zone" {
-  default     = "g4-general-8G"
+variable "machine_zookeeper_package_zone" {
+  default     = "g4-general-4G"
+  description = "Machine package size to use."
+}
+
+variable "machine_drill_package_zone" {
+  default     = "g4-general-16G"
   description = "Machine package size to use."
 }
 
@@ -88,6 +93,11 @@ variable "version_drill" {
 variable "version_zookeeper" {
   default     = "3.4.10"
   description = "The version of Zookeeper to install. See https://zookeeper.apache.org/releases.html."
+}
+
+variable "version_zk_cli" {
+  default     = "1.4"
+  description = "The version of Zookeeper CLI to install. See https://oss.sonatype.org/content/groups/public/com/loopfor/zookeeper/zookeeper-cli/."
 }
 
 #

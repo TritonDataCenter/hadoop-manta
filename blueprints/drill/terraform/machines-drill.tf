@@ -3,7 +3,7 @@ resource "triton_machine" "drill" {
 
   # NOTE: the machine name is used by Triton CNS and in drill-env.sh in the drill install script
   name    = "${local.tag_role_drill}-${count.index}"
-  package = "${var.machine_package_zone}"
+  package = "${var.machine_drill_package_zone}"
   image   = "${data.triton_image.ubuntu.id}"
 
   firewall_enabled = true
@@ -22,6 +22,7 @@ resource "triton_machine" "drill" {
   }
 
   metadata {
+    version_zk_cli       = "${var.version_zk_cli}"
     version_drill        = "${var.version_drill}"
     version_hadoop_manta = "${var.version_hadoop_manta}"
     name_machine         = "${var.project_name}-drill-${count.index}"
