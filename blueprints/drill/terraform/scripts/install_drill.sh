@@ -52,7 +52,7 @@ function install_dependencies() {
   sudo apt-get -qq -y upgrade
   log "Installing prerequisites..."
   sudo apt-get -qq -y install --no-install-recommends \
-    wget openjdk-8-jdk libnss3 dc unattended-upgrades unzip
+    wget openjdk-8-jdk-headless openjdk-8-dbg htop libnss3 dc unattended-upgrades unzip
 
   # Allow for unattended security updates
   log "Configuring unattended security patches"
@@ -95,6 +95,10 @@ EOF
   perl -0777 -i.original -pe \
     's/security.provider.1=sun.security.provider.Sun\nsecurity.provider.2=sun.security.rsa.SunRsaSign\nsecurity.provider.3=sun.security.ec.SunEC\nsecurity.provider.4=com.sun.net.ssl.internal.ssl.Provider\nsecurity.provider.5=com.sun.crypto.provider.SunJCE\nsecurity.provider.6=sun.security.jgss.SunProvider\nsecurity.provider.7=com.sun.security.sasl.Provider\nsecurity.provider.8=org.jcp.xml.dsig.internal.dom.XMLDSigRI\nsecurity.provider.9=sun.security.smartcardio.SunPCSC/security.provider.1=sun.security.pkcs11.SunPKCS11 \/etc\/nss.cfg\nsecurity.provider.2=sun.security.provider.Sun\nsecurity.provider.3=sun.security.rsa.SunRsaSign\nsecurity.provider.4=sun.security.ec.SunEC\nsecurity.provider.5=com.sun.net.ssl.internal.ssl.Provider\nsecurity.provider.6=com.sun.crypto.provider.SunJCE\nsecurity.provider.7=sun.security.jgss.SunProvider\nsecurity.provider.8=com.sun.security.sasl.Provider\nsecurity.provider.9=org.jcp.xml.dsig.internal.dom.XMLDSigRI\nsecurity.provider.10=sun.security.smartcardio.SunPCSC/igs' \
     /usr/lib/jvm/java-8-openjdk-amd64/jre/lib/security/java.security
+
+  log "Add CPU count spoofer library"
+  mkdir -p /usr/local/numcpus
+  wget -q -O /usr/local/numcpus/libnumcpus.so https://us-east.manta.joyent.com/elijah.zupancic/public/libnumcpus/amd64/libnumcpus.so
 
   log "Adding LX process tuning script"
   # Adds thread calculator script that allows you to tune JVM threadpools to
@@ -306,6 +310,7 @@ function install_drill() {
 export DRILL_HOST_NAME='${name_machine}.inst.${triton_account_uuid}.${triton_region}.cns.joyent.com'
 export DRILL_PID_DIR='${pid_dir}'
 export DRILL_LOG_DIR='/var/log/drill'
+export _NUM_CPUS=$(/usr/local/bin/proclimit)
 " > /etc/drill/conf/drill-env.sh
 
   /usr/bin/printf "
@@ -423,7 +428,7 @@ function get_manta_plugin_config() {
       "json": {
         "type": "json",
         "extensions": [
-          "ndjson", "log", "json", "gz"
+          "ndjson", "log", "json", "gz", "snappy"
         ]
       },
       "avro": {
