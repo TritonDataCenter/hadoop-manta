@@ -201,7 +201,7 @@ public class MantaFileSystem extends FileSystem implements AutoCloseable {
     }
 
     @Override
-    public FSDataInputStream open(final Path path, final int i) throws IOException {
+    public FSDataInputStream open(final Path path, final int bufferSize) throws IOException {
         LOG.debug("Opening '{}' for reading.", path);
 
         final FileStatus fileStatus = getFileStatus(path);
