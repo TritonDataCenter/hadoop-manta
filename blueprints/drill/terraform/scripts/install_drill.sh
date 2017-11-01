@@ -52,7 +52,7 @@ function install_dependencies() {
   sudo apt-get -qq -y upgrade
   log "Installing prerequisites..."
   sudo apt-get -qq -y install --no-install-recommends \
-    wget openjdk-8-jdk-headless openjdk-8-dbg htop libnss3 dc unattended-upgrades unzip
+    wget openjdk-8-jdk-headless openjdk-8-dbg htop libnss3 dc unattended-upgrades unzip jq netcat
 
   # Allow for unattended security updates
   log "Configuring unattended security patches"
@@ -275,6 +275,8 @@ function install_drill() {
 
   local -r path_file="apache-drill-${version_drill}.tar.gz"
   local -r path_install="/usr/local/apache-drill-${version_drill}"
+  local -r drillbit_server="localhost:8047"
+  local -r plugin_url="http://${drillbit_server}/storage/myplugin.json"
 
   log "Downloading Drill ${version_drill}..."
   wget -q -O ${path_file} "http://mirrors.sonic.net/apache/drill/drill-${version_drill}/apache-drill-${version_drill}.tar.gz"
@@ -310,7 +312,8 @@ function install_drill() {
 export DRILL_HOST_NAME='${name_machine}.inst.${triton_account_uuid}.${triton_region}.cns.joyent.com'
 export DRILL_PID_DIR='${pid_dir}'
 export DRILL_LOG_DIR='/var/log/drill'
-export _NUM_CPUS=$(/usr/local/bin/proclimit)
+export _NUM_CPUS=\$(/usr/local/bin/proclimit)
+export DRILLBIT_JAVA_OPTS='-XX:+PrintFlagsFinal'
 " > /etc/drill/conf/drill-env.sh
 
   /usr/bin/printf "
@@ -363,20 +366,30 @@ WantedBy=default.target
   systemctl enable drill.service
   systemctl start drill.service
 
-  log "Configuring hadoop-manta storage plugin..."
-
-  while [ "$(echo 'stat drill' | zk ${address_zookeeper}:2181 | grep 'czxid')" == "" ]; do
-    log "Waiting for Apache Drill to come online"
+  # We wait for the first Drill instance to come online. It doesn't matter what
+  # instance it is. All we care is that there was a single healthy instance that
+  # boot up. This means that most of the drillbits should be coming online soon.
+  while [ "$(echo 'stat drill/drillbits1' | zk ${address_zookeeper}:2181 | grep 'czxid')" == "" ]; do
+    log "Waiting for a single Apache Drill instance to come online"
     sleep 10
   done
 
-  curl 'http://localhost:8047/storage/myplugin.json' \
-    -s \
-    --retry 6 \
-    --retry-delay 5 \
-    -X POST \
-    -H 'Content-Type: application/json;charset=UTF-8' \
-    -d "$(get_manta_plugin_config)"
+  # Wait until the Drillbit server port is online
+  while ! nc -z localhost 8047; do
+    sleep 5
+  done
+
+  # If the Drillbit plugin config hasn't been initialized, then we initialize
+  # it to settings that we can handle data from Manta.
+  if [[ "$(curl --retry 6 -S -s ${plugin_url} | jq .config)" == "null" ]]; then
+    log "Configuring hadoop-manta storage plugin..."
+    curl --retry 6 -s -S -X POST \
+      -H 'Content-Type: application/json;charset=UTF-8' \
+      -d "$(get_manta_plugin_config)" \
+      ${plugin_url}
+  fi
+
+  log "Finished installing Apache Drill"
 }
 
 function get_manta_plugin_config() {
