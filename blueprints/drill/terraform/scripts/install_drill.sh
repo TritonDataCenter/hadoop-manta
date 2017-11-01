@@ -404,7 +404,7 @@ WantedBy=default.target
     curl --retry 6 -s -S -X POST \
       -H 'Content-Type: application/json;charset=UTF-8' \
       -d "$(get_manta_plugin_config)" \
-      ${http://localhost:8047/storage/myplugin.json}
+      'http://localhost:8047/storage/myplugin.json'
   fi
 
   log "Finished installing Apache Drill"
