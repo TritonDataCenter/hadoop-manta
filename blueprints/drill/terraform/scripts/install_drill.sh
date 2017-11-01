@@ -52,7 +52,8 @@ function install_dependencies() {
   sudo apt-get -qq -y upgrade
   log "Installing prerequisites..."
   sudo apt-get -qq -y install --no-install-recommends \
-    wget openjdk-8-jdk-headless openjdk-8-dbg htop libnss3 dc unattended-upgrades unzip jq netcat
+    wget openjdk-8-jdk-headless openjdk-8-dbg htop libnss3 dc \
+    unattended-upgrades unzip jq netcat libsnappy1v5
 
   # Allow for unattended security updates
   log "Configuring unattended security patches"
@@ -275,8 +276,6 @@ function install_drill() {
 
   local -r path_file="apache-drill-${version_drill}.tar.gz"
   local -r path_install="/usr/local/apache-drill-${version_drill}"
-  local -r drillbit_server="localhost:8047"
-  local -r plugin_url="http://${drillbit_server}/storage/myplugin.json"
 
   log "Downloading Drill ${version_drill}..."
   wget -q -O ${path_file} "http://mirrors.sonic.net/apache/drill/drill-${version_drill}/apache-drill-${version_drill}.tar.gz"
@@ -301,12 +300,31 @@ function install_drill() {
   log "Configuring Drill service..."
 
   install -d -o ${user_drill} -g ${user_drill} /etc/drill/conf
+  install -d -o ${user_drill} -g ${user_drill} /etc/drill/conf/lib
   install -d -o ${user_drill} -g ${user_drill} /var/lib/drill
   install -d -o ${user_drill} -g ${user_drill} /var/log/drill
   install -d -o ${user_drill} -g ${user_drill} /etc/manta/
 
+  # Add Hadoop native libraries
+  curl -s "https://us-east.manta.joyent.com/elijah.zupancic/public/hadoop/hadoop-2.8.1-native-libs.tar.gz" \
+    | tar -xz -C /etc/drill/conf/lib && chown -R ${user_drill}:${user_drill} /etc/drill/conf/lib
+
+  # Linking in native compression libraries
+  ln -s /usr/lib/x86_64-linux-gnu/libsnappy.so.1 /etc/drill/conf/lib/libsnappy.so
+  ln -s /lib/x86_64-linux-gnu/libz.so.1 /etc/drill/conf/lib/libz.so
+  ln -s /lib/x86_64-linux-gnu/libbz2.so.1 /etc/drill/conf/lib/libbz2.so
+
   local -r pid_dir="/var/run/drill"
   local -r pid_file="${pid_dir}/drillbit.pid"
+
+  /usr/bin/printf "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
+<configuration>
+ <property>
+  <name>io.compression.codecs</name>
+  <value>org.apache.hadoop.io.compress.SnappyCodec</value>
+ </property>
+</configuration>
+" > /etc/drill/conf/core-site.xml
 
   /usr/bin/printf "
 export DRILL_HOST_NAME='${name_machine}.inst.${triton_account_uuid}.${triton_region}.cns.joyent.com'
@@ -381,12 +399,12 @@ WantedBy=default.target
 
   # If the Drillbit plugin config hasn't been initialized, then we initialize
   # it to settings that we can handle data from Manta.
-  if [[ "$(curl --retry 6 -S -s ${plugin_url} | jq .config)" == "null" ]]; then
+  if [[ "$(curl --retry 6 -S -s 'http://localhost:8047/storage/manta.json' | jq .config)" == "null" ]]; then
     log "Configuring hadoop-manta storage plugin..."
     curl --retry 6 -s -S -X POST \
       -H 'Content-Type: application/json;charset=UTF-8' \
       -d "$(get_manta_plugin_config)" \
-      ${plugin_url}
+      ${http://localhost:8047/storage/myplugin.json}
   fi
 
   log "Finished installing Apache Drill"
@@ -441,7 +459,7 @@ function get_manta_plugin_config() {
       "json": {
         "type": "json",
         "extensions": [
-          "ndjson", "log", "json", "gz", "snappy"
+          "ndjson", "json", "log", "gz", "snappy", "bz2"
         ]
       },
       "avro": {
