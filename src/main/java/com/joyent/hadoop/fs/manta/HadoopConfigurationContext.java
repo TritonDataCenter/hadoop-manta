@@ -112,6 +112,11 @@ public class HadoopConfigurationContext implements ConfigContext {
     }
 
     @Override
+    public Integer getConnectionRequestTimeout() {
+        return getIntDefaultToNull(MapConfigContext.MANTA_CONNECTION_REQUEST_TIMEOUT_KEY);
+    }
+
+    @Override
     public EncryptionAuthenticationMode getEncryptionAuthenticationMode() {
         String val = configuration.get(MapConfigContext.MANTA_ENCRYPTION_AUTHENTICATION_MODE_KEY);
 

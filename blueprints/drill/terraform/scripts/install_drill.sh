@@ -319,9 +319,15 @@ function install_drill() {
 
   /usr/bin/printf "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>
 <configuration>
+ <!-- Enable the use of the Snappy compression codec -->
  <property>
   <name>io.compression.codecs</name>
   <value>org.apache.hadoop.io.compress.SnappyCodec</value>
+ </property>
+ <!-- Explicitly enable and define Manta filesystem support -->
+ <property>
+  <name>fs.manta.impl</name>
+  <value>com.joyent.hadoop.fs.manta.MantaFileSystem</value>
  </property>
 </configuration>
 " > /etc/drill/conf/core-site.xml
