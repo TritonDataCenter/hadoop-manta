@@ -3,8 +3,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.0.7] - ?
+### Added
+ - Add recursive directory traversal.
+
 ### Changed
- - Upgraded Java Manta SDK to 3.1.7.
+ - Upgraded Java Manta SDK to 3.2.1.
+ - Refactored home directory substitution.
 
 ## [1.0.6] - 2017-06-15
 ### Changed
