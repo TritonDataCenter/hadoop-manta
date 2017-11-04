@@ -168,27 +168,29 @@ EOF
 # Parameters:
 #     $1: the version of ZK CLI
 #     $2: the version of drill
-#     $3: the version of hadoop-manta
-#     $4: the machine name
-#     $5: the triton account uuid
-#     $6: the triton region
-#     $7: the zookeeper address
-#     $8: the manta url
-#     $9: the manta user
-#     $10: the manta key id
-#     $11: the manta private key
+#     $3: the drill tarball md5
+#     $4: the version of hadoop-manta
+#     $5: the machine name
+#     $6: the triton account uuid
+#     $7: the triton region
+#     $8: the zookeeper address
+#     $9: the manta url
+#     $10: the manta user
+#     $11: the manta key id
+#     $12: the manta private key
 function check_arguments() {
   local -r version_zk_cli=${1}
   local -r version_drill=${2}
-  local -r version_hadoop_manta=${3}
-  local -r name_machine=${4}
-  local -r triton_account_uuid=${5}
-  local -r triton_region=${6}
-  local -r address_zookeeper=${7}
-  local -r manta_url=${8}
-  local -r manta_user=${9}
-  local -r manta_key_id=${10}
-  local -r manta_key=${11}
+  local -r md5_drill=${3}
+  local -r version_hadoop_manta=${4}
+  local -r name_machine=${5}
+  local -r triton_account_uuid=${6}
+  local -r triton_region=${7}
+  local -r address_zookeeper=${8}
+  local -r manta_url=${9}
+  local -r manta_user=${10}
+  local -r manta_key_id=${11}
+  local -r manta_key=${12}
 
   if [[ -z "${version_zk_cli}" ]]; then
     log "ZK CLI version NOT provided. Exiting..."
@@ -197,6 +199,11 @@ function check_arguments() {
 
   if [[ -z "${version_drill}" ]]; then
     log "Drill version NOT provided. Exiting..."
+    exit 1
+  fi
+
+  if [[ -z "${md5_drill}" ]]; then
+    log "Drill md5 NOT provided. Exiting..."
     exit 1
   fi
 
@@ -251,26 +258,28 @@ function check_arguments() {
 #
 # Parameters:
 #     $1: the version of drill
-#     $2: the version of hadoop-manta
-#     $3: the machine name
-#     $4: the triton account uuid
-#     $5: the triton region
-#     $6: the zookeeper address
-#     $7: the manta url
-#     $8: the manta user
-#     $9: the manta key id
-#     $10: the manta private key
+#     $2: the md5 checksum of the drill tarball
+#     $3: the version of hadoop-manta
+#     $4: the machine name
+#     $5: the triton account uuid
+#     $6: the triton region
+#     $7: the zookeeper address
+#     $8: the manta url
+#     $9: the manta user
+#     $10: the manta key id
+#     $11: the manta private key
 function install_drill() {
   local -r version_drill=${1}
-  local -r version_hadoop_manta=${2}
-  local -r name_machine=${3}
-  local -r triton_account_uuid=${4}
-  local -r triton_region=${5}
-  local -r address_zookeeper=${6}
-  local -r manta_url=${7}
-  local -r manta_user=${8}
-  local -r manta_key_id=${9}
-  local -r manta_key=${10}
+  local -r md5_drill=${2}
+  local -r version_hadoop_manta=${3}
+  local -r name_machine=${4}
+  local -r triton_account_uuid=${5}
+  local -r triton_region=${6}
+  local -r address_zookeeper=${7}
+  local -r manta_url=${8}
+  local -r manta_user=${9}
+  local -r manta_key_id=${10}
+  local -r manta_key=${11}
 
   local -r user_drill='drill'
 
@@ -279,6 +288,7 @@ function install_drill() {
 
   log "Downloading Drill ${version_drill}..."
   wget -q -O ${path_file} "http://mirrors.sonic.net/apache/drill/drill-${version_drill}/apache-drill-${version_drill}.tar.gz"
+  echo "${md5_drill}  ${path_file}" | md5sum -c
 
   log "Installing Drill ${version_drill}..."
 
@@ -426,13 +436,18 @@ function get_manta_plugin_config() {
     "connection": "manta:///",
     "config": null,
     "workspaces": {
+      "default": {
+        "location": "manta:/~~/stor/",
+        "writable": true,
+        "defaultInputFormat": null
+      },
       "root": {
-        "location": "/",
-        "writable": false,
+        "location": "manta:/",
+        "writable": true,
         "defaultInputFormat": null
       },
       "tmp": {
-        "location": "/tmp",
+        "location": "manta:/~~/stor/tmp",
         "writable": true,
         "defaultInputFormat": null
       }
@@ -510,6 +525,7 @@ function main() {
 
   local -r arg_version_zk_cli=$(/native/usr/sbin/mdata-get 'version_zk_cli')
   local -r arg_version_drill=$(/native/usr/sbin/mdata-get 'version_drill')
+  local -r arg_md5_drill=$(/native/usr/sbin/mdata-get 'md5_drill')
   local -r arg_version_hadoop_manta=$(/native/usr/sbin/mdata-get 'version_hadoop_manta')
   local -r arg_name_machine=$(/native/usr/sbin/mdata-get 'name_machine')
   local -r arg_triton_account_uuid=$(/native/usr/sbin/mdata-get 'triton_account_uuid')
@@ -520,7 +536,7 @@ function main() {
   local -r arg_manta_key_id=$(/native/usr/sbin/mdata-get 'manta_key_id')
   local -r arg_manta_key=$(/native/usr/sbin/mdata-get 'manta_key')
   check_arguments \
-    ${arg_version_zk_cli} ${arg_version_drill} ${arg_version_hadoop_manta} \
+    ${arg_version_zk_cli} ${arg_version_drill} ${arg_md5_drill} ${arg_version_hadoop_manta} \
     ${arg_name_machine} ${arg_triton_account_uuid} ${arg_triton_region} ${arg_address_zookeeper} \
     ${arg_manta_url} ${arg_manta_user} ${arg_manta_key_id} "${arg_manta_key}"
 
@@ -528,7 +544,7 @@ function main() {
   configure_jvm
   install_zk_cli ${arg_version_zk_cli}
   install_drill \
-    ${arg_version_drill} ${arg_version_hadoop_manta} \
+    ${arg_version_drill} ${arg_md5_drill} ${arg_version_hadoop_manta} \
     ${arg_name_machine} ${arg_triton_account_uuid} ${arg_triton_region} ${arg_address_zookeeper} \
     ${arg_manta_url} ${arg_manta_user} ${arg_manta_key_id} "${arg_manta_key}"
 

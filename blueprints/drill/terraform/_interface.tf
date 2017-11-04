@@ -90,6 +90,11 @@ variable "version_drill" {
   description = "The version of Drill to install. See https://drill.apache.org/download/."
 }
 
+variable "md5_drill" {
+  default     = "04a6585e318e3a09ac17c41f9228f9ec"
+  description = "The MD5 checksum of the Apache Drill tarball."
+}
+
 variable "version_zookeeper" {
   default     = "3.4.10"
   description = "The version of Zookeeper to install. See https://zookeeper.apache.org/releases.html."

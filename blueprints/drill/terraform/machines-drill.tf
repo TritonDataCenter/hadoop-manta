@@ -24,6 +24,7 @@ resource "triton_machine" "drill" {
   metadata {
     version_zk_cli       = "${var.version_zk_cli}"
     version_drill        = "${var.version_drill}"
+    md5_drill            = "${var.md5_drill}"
     version_hadoop_manta = "${var.version_hadoop_manta}"
     name_machine         = "${var.project_name}-drill-${count.index}"
     triton_account_uuid  = "${var.triton_account_uuid}"
