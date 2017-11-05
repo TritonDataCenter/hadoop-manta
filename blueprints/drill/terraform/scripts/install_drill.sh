@@ -346,8 +346,47 @@ function install_drill() {
 export DRILL_HOST_NAME='${name_machine}.inst.${triton_account_uuid}.${triton_region}.cns.joyent.com'
 export DRILL_PID_DIR='${pid_dir}'
 export DRILL_LOG_DIR='/var/log/drill'
-export _NUM_CPUS=\$(/usr/local/bin/proclimit)
+export HW_THREADS=\$(/usr/local/bin/proclimit)
+# This setting has been deprecated in the 1.8 JVM, so we don't set it
 export DRILLBIT_JAVA_OPTS='-XX:+PrintFlagsFinal'
+
+if [ -d /native ]; then
+  # Tune GC thread pool to a non-pathological value
+  if [ \$HW_THREADS -le 8 ]; then
+      GC_THREADS=\$HW_THREADS
+  else
+      # ParallelGCThreads = (ncpus <= 8) ? ncpus : 3 + ((ncpus * 5) / 8)
+      ADJUSTED=\$(echo \"8k \$HW_THREADS 5 * pq\" | dc)
+      DIVIDED=\$(echo \"8k \$ADJUSTED 8 / pq\" | dc)
+      GC_THREADS=\$(echo \"8k \$DIVIDED 3 + pq\" | dc | awk 'function ceil(valor) { return (valor == int(valor) && value != 0) ? valor : int(valor)+1 } { printf \"%%d\", ceil(\$1) }')
+  fi
+
+  if [ \$HW_THREADS -le 2 ]; then
+      PARALLELISM=2
+  else
+      PARALLELISM=\$HW_THREADS
+  fi;
+
+  export DRILLBIT_JAVA_OPTS=\"\${DRILLBIT_JAVA_OPTS} -XX:-UseGCTaskAffinity -XX:-BindGCTaskThreadsToCPUs -XX:ParallelGCThreads=\${GC_THREADS} -Djava.util.concurrent.ForkJoinPool.common.parallelism=\${PARALLELISM}\"
+
+  echo \"DRILLBIT_JAVA_OPTS=\${DRILLBIT_JAVA_OPTS}\"
+fi
+
+  # Heap size with drill is a fixed value because there is little variable usage.
+  DRILL_HEAP_KB=\"4194304\"
+  export DRILL_HEAP=\"\${DRILL_HEAP_KB}K\"
+
+  # Tune memory to use most of the available memory on the zone
+  TOTAL_MEMORY_KB=\$(cat /proc/meminfo | grep MemTotal | cut -d: -f2 | sed 's/^ *//' | cut -d' ' -f1)
+  # We reserve 25%% of the total memory
+  RESERVED_KB=\$(echo \"8k \$TOTAL_MEMORY_KB .25 * pq\" | dc)
+  USABLE_MEMORY_KB=\$(echo \"8k \$TOTAL_MEMORY_KB \$RESERVED_KB - pq\" | dc)
+  MINUS_HEAP=\$(echo \"8k \$USABLE_MEMORY_KB \$DRILL_HEAP_KB - pq\" | dc | awk 'function ceil(valor) { return (valor == int(valor) && value != 0) ? valor : int(valor)+1 } { printf \"%%d\", ceil(\$1) }')
+
+  # We auto-calculate the amount of direct memory used on the zone because
+  # it has variable usage with drill.
+  export DRILL_MAX_DIRECT_MEMORY=\"\${MINUS_HEAP}K\"
+  echo \"DRILL_MAX_DIRECT_MEMORY=\$DRILL_MAX_DIRECT_MEMORY\"
 " > /etc/drill/conf/drill-env.sh
 
   /usr/bin/printf "
