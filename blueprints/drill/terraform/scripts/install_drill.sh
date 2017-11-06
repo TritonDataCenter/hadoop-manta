@@ -392,9 +392,10 @@ fi
   /usr/bin/printf "
 drill.exec: {
   cluster-id: \"drillbits1\",
-  zk.connect: \"${address_zookeeper}:2181\"
-  rpc.bit.advertised.host: \"${name_machine}.inst.${triton_account_uuid}.${triton_region}.cns.joyent.com\"
-  udf.directory.root: \"/var/lib/drill\"
+  zk.connect: \"${address_zookeeper}:2181\",
+  rpc.bit.advertised.host: \"${name_machine}.inst.${triton_account_uuid}.${triton_region}.cns.joyent.com\",
+  udf.directory.root: \"/var/lib/drill\",
+  drill.exec.http.ssl_enabled: \"true\"
 }
 " > /etc/drill/conf/drill-override.conf
 
