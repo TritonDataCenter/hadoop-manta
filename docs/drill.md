@@ -22,13 +22,18 @@ In the *Configuration* text box, paste the following:
   "connection": "manta:///",
   "config": null,
   "workspaces": {
+    "default": {
+      "location": "manta:/~~/stor/",
+      "writable": true,
+      "defaultInputFormat": null
+    },
     "root": {
-      "location": "/",
-      "writable": false,
+      "location": "manta:/",
+      "writable": true,
       "defaultInputFormat": null
     },
     "tmp": {
-      "location": "/tmp",
+      "location": "manta:/~~/stor/tmp",
       "writable": true,
       "defaultInputFormat": null
     }
