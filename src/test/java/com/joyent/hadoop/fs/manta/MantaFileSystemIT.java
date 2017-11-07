@@ -19,7 +19,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.util.Progressable;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -179,7 +178,7 @@ public class MantaFileSystemIT {
     }
 
     @Test
-    public void canListMantaDirectory() throws IOException {
+    public void canListMantaDirectoryWithoutRecursion() throws IOException {
         client.putDirectory(testPathPrefix + "dir-1");
         client.putDirectory(testPathPrefix + "dir-2");
         client.putDirectory(testPathPrefix + "dir-3");
@@ -188,30 +187,76 @@ public class MantaFileSystemIT {
         client.put(testPathPrefix + "file3.txt", TEST_DATA);
 
         Path path = new Path(testPathPrefix);
-        RemoteIterator<LocatedFileStatus> itr = fs.listFiles(path, false);
-        List<LocatedFileStatus> results = new ArrayList<>(6);
 
-        while (itr.hasNext()) {
-            results.add(itr.next());
+        try (MantaRemoteIterator itr = (MantaRemoteIterator)fs.listFiles(path, false)) {
+            List<LocatedFileStatus> results = new ArrayList<>(6);
+
+            while (itr.hasNext()) {
+                results.add(itr.next());
+            }
+
+            assertTrue("File doesn't exist: " + testPathPrefix + "file1.txt",
+                    containsFile(results, testPathPrefix + "file1.txt"));
+            assertTrue("File doesn't exist: " + testPathPrefix + "file2.txt",
+                    containsFile(results, testPathPrefix + "file2.txt"));
+            assertTrue("File doesn't exist: " + testPathPrefix + "file3.txt",
+                    containsFile(results, testPathPrefix + "file3.txt"));
+
+            assertFalse("Directory returned in file results: " + testPathPrefix + "dir-1",
+                    containsDir(results, testPathPrefix + "dir-1"));
+            assertFalse("Directory returned in file results: " + testPathPrefix + "dir-2",
+                    containsDir(results, testPathPrefix + "dir-2"));
+            assertFalse("Directory returned in file results: " + testPathPrefix + "dir-3",
+                    containsDir(results, testPathPrefix + "dir-3"));
+
+            assertEquals("Mismatch between size of results and files added",
+                    3, results.size());
         }
-
-        assertEquals("Mismatch between size of results and files added",
-                3, results.size());
-
-        assertTrue("File doesn't exist: " + testPathPrefix + "file1.txt",
-                containsFile(results, testPathPrefix + "file1.txt"));
-        assertTrue("File doesn't exist: " + testPathPrefix + "file2.txt",
-                containsFile(results, testPathPrefix + "file2.txt"));
-        assertTrue("File doesn't exist: " + testPathPrefix + "file3.txt",
-                containsFile(results, testPathPrefix + "file3.txt"));
-
-        assertFalse("Directory returned in file results: " + testPathPrefix + "dir-1",
-                containsDir(results, testPathPrefix + "dir-1"));
-        assertFalse("Directory returned in file results: " + testPathPrefix + "dir-2",
-                containsDir(results, testPathPrefix + "dir-2"));
-        assertFalse("Directory returned in file results: " + testPathPrefix + "dir-3",
-                containsDir(results, testPathPrefix + "dir-3"));
     }
+
+    @Test
+    public void canListMantaDirectoryWithRecursion() throws IOException {
+        client.putDirectory(testPathPrefix + "dir-1");
+        client.putDirectory(testPathPrefix + "dir-2");
+        client.putDirectory(testPathPrefix + "dir-3");
+        client.put(testPathPrefix + "file1.txt", TEST_DATA);
+        client.put(testPathPrefix + "file2.txt", TEST_DATA);
+        client.put(testPathPrefix + "file3.txt", TEST_DATA);
+        client.putDirectory(testPathPrefix + "dir-3/dir-4");
+        client.put(testPathPrefix + "dir-3/dir-4/file4.txt", TEST_DATA);
+
+        Path path = new Path(testPathPrefix);
+
+        try (MantaRemoteIterator itr = (MantaRemoteIterator)fs.listFiles(path, true)) {
+            List<LocatedFileStatus> results = new ArrayList<>(6);
+
+            while (itr.hasNext()) {
+                results.add(itr.next());
+            }
+
+            assertTrue("File doesn't exist: " + testPathPrefix + "file1.txt",
+                    containsFile(results, testPathPrefix + "file1.txt"));
+            assertTrue("File doesn't exist: " + testPathPrefix + "file2.txt",
+                    containsFile(results, testPathPrefix + "file2.txt"));
+            assertTrue("File doesn't exist: " + testPathPrefix + "file3.txt",
+                    containsFile(results, testPathPrefix + "file3.txt"));
+            assertTrue("File doesn't exist: " + testPathPrefix + "file3.txt",
+                    containsFile(results, testPathPrefix + "dir-3/dir-4/file4.txt"));
+
+            assertFalse("Directory returned in file results: " + testPathPrefix + "dir-1",
+                    containsDir(results, testPathPrefix + "dir-1"));
+            assertFalse("Directory returned in file results: " + testPathPrefix + "dir-2",
+                    containsDir(results, testPathPrefix + "dir-2"));
+            assertFalse("Directory returned in file results: " + testPathPrefix + "dir-3",
+                    containsDir(results, testPathPrefix + "dir-3"));
+            assertFalse("Directory returned in file results: " + testPathPrefix + "dir-3/dir-4",
+                    containsDir(results, testPathPrefix + "dir-3/dir-4"));
+
+            assertEquals("Mismatch between size of results and files added",
+                    4, results.size());
+        }
+    }
+
 
     @Test
     public void canMakeDirectory() throws IOException {

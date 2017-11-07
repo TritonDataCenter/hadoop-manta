@@ -148,7 +148,7 @@ public class MantaSeekableInputStream extends FSInputStream {
     public synchronized int read(final long position, final byte[] buffer,
                                  final int offset, final int length) throws IOException {
         long oldPos = getPos();
-        int nread = -1;
+        int nread;
         try {
             seek(position);
             nread = read(buffer, offset, length);

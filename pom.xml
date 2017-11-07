@@ -60,33 +60,32 @@
         <failsafe.forkCount>1</failsafe.forkCount>
         <failsafe.useSystemClassLoader>true</failsafe.useSystemClassLoader>
         <!-- Dependency versions -->
-        <dependency.checkstyle.version>6.17</dependency.checkstyle.version>
-        <dependency.java-manta.version>3.1.1</dependency.java-manta.version>
-        <dependency.testng.version>6.9.9</dependency.testng.version>
-        <dependency.hadoop.version>2.8.0</dependency.hadoop.version>
-        <dependency.mockito.version>2.0.2-beta</dependency.mockito.version>
+        <dependency.checkstyle.version>8.2</dependency.checkstyle.version>
+        <dependency.java-manta.version>3.2.0</dependency.java-manta.version>
+        <dependency.hadoop.version>2.8.1</dependency.hadoop.version>
+        <dependency.junit.version>4.2</dependency.junit.version>
+        <dependency.mockito.version>2.7.2</dependency.mockito.version>
 
         <!-- Plugin versions -->
         <maven-checkstyle-plugin.version>2.17</maven-checkstyle-plugin.version>
         <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
-        <maven-build-helper-plugin>1.10</maven-build-helper-plugin>
-        <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
-        <maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
+        <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
+        <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
-        <maven-extra-enforcer-rules.version>1.0-beta-4</maven-extra-enforcer-rules.version>
-        <maven-failsafe-plugin.version>2.19</maven-failsafe-plugin.version>
+        <maven-extra-enforcer-rules.version>1.0-beta-6</maven-extra-enforcer-rules.version>
+        <maven-failsafe-plugin.version>2.20.1</maven-failsafe-plugin.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
-        <maven-jar-plugin.version>2.6</maven-jar-plugin.version>
+        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
         <maven-jarsigner-plugin.version>1.4</maven-jarsigner-plugin.version>
-        <maven-javadoc-plugin.version>2.10.3</maven-javadoc-plugin.version>
+        <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
         <maven-jxr-plugin.version>2.5</maven-jxr-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-resources-plugin.version>2.7</maven-resources-plugin.version>
+        <maven-resources-plugin.version>3.0.2</maven-resources-plugin.version>
         <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
-        <maven-source-plugin.version>2.4</maven-source-plugin.version>
-        <maven-surefire-plugin.version>2.19</maven-surefire-plugin.version>
+        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
+        <maven-surefire-plugin.version>2.20.1</maven-surefire-plugin.version>
     </properties>
 
     <dependencies>
@@ -126,7 +125,7 @@
 
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
             <version>${dependency.mockito.version}</version>
             <scope>test</scope>
         </dependency>
@@ -149,7 +148,7 @@
                             <url>http://www-us.apache.org/dist/hadoop/common/hadoop-${dependency.hadoop.version}/hadoop-${dependency.hadoop.version}.tar.gz</url>
                             <unpack>true</unpack>
                             <outputDirectory>${project.build.directory}/hadoop_home</outputDirectory>
-                            <md5>c728a090b68d009070085367695ed507</md5>
+                            <md5>def2211ee1561871794e1b0eec8cb628</md5>
                         </configuration>
                     </execution>
                 </executions>
