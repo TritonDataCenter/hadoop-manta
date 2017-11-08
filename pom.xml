@@ -4,7 +4,7 @@
 
     <groupId>com.joyent.manta</groupId>
     <artifactId>hadoop-manta</artifactId>
-    <version>1.0.7-SNAPSHOT</version>
+    <version>1.0.7</version>
 
     <licenses>
         <license>
@@ -30,7 +30,7 @@
         <connection>scm:git:git://github.com/joyent/hadoop-manta.git</connection>
         <developerConnection>scm:git:git://github.com/joyent/hadoop-manta.git</developerConnection>
         <url>git@github.com:joyent/hadoop-manta.git</url>
-        <tag>HEAD</tag>
+        <tag>hadoop-manta-1.0.7</tag>
     </scm>
     <issueManagement>
         <system>github.com</system>
