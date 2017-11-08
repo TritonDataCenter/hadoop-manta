@@ -347,6 +347,7 @@ export DRILL_HOST_NAME='${name_machine}.inst.${triton_account_uuid}.${triton_reg
 export DRILL_PID_DIR='${pid_dir}'
 export DRILL_LOG_DIR='/var/log/drill'
 export HW_THREADS=\$(/usr/local/bin/proclimit)
+export _NUM_CPUS=\$HW_THREADS
 # This setting has been deprecated in the 1.8 JVM, so we don't set it
 export DRILLBIT_JAVA_OPTS='-XX:+PrintFlagsFinal'
 
@@ -368,8 +369,10 @@ if [ -d /native ]; then
   fi;
 
   export DRILLBIT_JAVA_OPTS=\"\${DRILLBIT_JAVA_OPTS} -XX:-UseGCTaskAffinity -XX:-BindGCTaskThreadsToCPUs -XX:ParallelGCThreads=\${GC_THREADS} -Djava.util.concurrent.ForkJoinPool.common.parallelism=\${PARALLELISM}\"
-
   echo \"DRILLBIT_JAVA_OPTS=\${DRILLBIT_JAVA_OPTS}\"
+
+  echo \"Loading drill with LD_PRELOAD=/usr/local/numcpus/libnumcpus.so to simulate \${_NUM_CPUS}\"
+  export _DRILL_WRAPPER_=\"env LD_PRELOAD=/usr/local/numcpus/libnumcpus.so\"
 fi
 
   # Heap size with drill is a fixed value because there is little variable usage.
