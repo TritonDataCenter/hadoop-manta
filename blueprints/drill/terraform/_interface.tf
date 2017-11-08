@@ -81,7 +81,7 @@ variable "version_hadoop" {
 }
 
 variable "version_hadoop_manta" {
-  default     = "1.0.7-snapshot"
+  default     = "1.0.7"
   description = "The version of Hadoop Manta filesystem driver to install. See https://github.com/joyent/hadoop-manta."
 }
 
