@@ -99,7 +99,8 @@ EOF
 
   log "Add CPU count spoofer library"
   mkdir -p /usr/local/numcpus
-  wget -q -O /usr/local/numcpus/libnumcpus.so https://us-east.manta.joyent.com/elijah.zupancic/public/libnumcpus/amd64/libnumcpus.so
+  wget -q -O /usr/local/numcpus/libnumcpus.so https://github.com/dekobon/libnumcpus/releases/download/1.0/libnumcpus-linux-x86_64.so
+  echo '6bc838db493d70a83dba9bd3d34c013d368339f288efc4629830fdcb25fa08f7  /usr/local/numcpus/libnumcpus.so' | sha256sum -c
 
   log "Adding LX process tuning script"
   # Adds thread calculator script that allows you to tune JVM threadpools to
