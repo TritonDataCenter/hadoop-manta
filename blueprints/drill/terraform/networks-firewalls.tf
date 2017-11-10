@@ -20,9 +20,9 @@ resource "triton_firewall_rule" "external_to_drill" {
   rule    = "FROM all vms TO tag \"role\" = \"${local.tag_role_drill}\" ALLOW tcp PORT 8047"
   enabled = true
 }
+
 # see https://drill.apache.org/docs/ports-used-by-drill/
 resource "triton_firewall_rule" "drill_to_drill" {
   rule    = "FROM tag \"role\" = \"${local.tag_role_drill}\" TO tag \"role\" = \"${local.tag_role_drill}\" ALLOW tcp PORTS 31010 - 31012"
   enabled = true
 }
-

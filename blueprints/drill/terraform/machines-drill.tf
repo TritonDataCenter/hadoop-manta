@@ -22,14 +22,12 @@ resource "triton_machine" "drill" {
   }
 
   metadata {
-    version_zk_cli       = "${var.version_zk_cli}"
-    version_drill        = "${var.version_drill}"
-    md5_drill            = "${var.md5_drill}"
-    version_hadoop_manta = "${var.version_hadoop_manta}"
-    name_machine         = "${var.project_name}-drill-${count.index}"
-    triton_account_uuid  = "${var.triton_account_uuid}"
-    triton_region        = "${var.triton_region}"
-    address_zookeeper    = "${local.address_zookeeper}"
+    version_zk_cli        = "${var.version_zk_cli}"
+    version_drill         = "${var.version_drill}"
+    md5_drill             = "${var.md5_drill}"
+    version_hadoop_manta  = "${var.version_hadoop_manta}"
+    name_machine          = "${var.project_name}-drill-${count.index}"
+    cns_service_zookeeper = "${local.cns_service_zookeeper}"
 
     manta_url    = "${var.manta_url}"
     manta_user   = "${var.manta_user}"
@@ -41,8 +39,8 @@ resource "triton_machine" "drill" {
     # explicitly depend on the zookeeper machine because we're using the CNS address
     # and not directly depending on the resource otherwise
     "triton_machine.zookeeper",
-    "null_resource.zookeeper_install",
 
+    "null_resource.zookeeper_install",
     "triton_firewall_rule.drill_to_drill",
     "triton_firewall_rule.drill_to_zookeeper",
   ]
