@@ -572,13 +572,16 @@ function main() {
   local -r arg_md5_drill=$(/native/usr/sbin/mdata-get 'md5_drill')
   local -r arg_version_hadoop_manta=$(/native/usr/sbin/mdata-get 'version_hadoop_manta')
   local -r arg_name_machine=$(/native/usr/sbin/mdata-get 'name_machine')
-  local -r arg_triton_account_uuid=$(/native/usr/sbin/mdata-get 'triton_account_uuid')
-  local -r arg_triton_region=$(/native/usr/sbin/mdata-get 'triton_region')
-  local -r arg_address_zookeeper=$(/native/usr/sbin/mdata-get 'address_zookeeper')
+  local -r arg_cns_service_zookeeper=$(/native/usr/sbin/mdata-get 'cns_service_zookeeper')
   local -r arg_manta_url=$(/native/usr/sbin/mdata-get 'manta_url')
   local -r arg_manta_user=$(/native/usr/sbin/mdata-get 'manta_user')
   local -r arg_manta_key_id=$(/native/usr/sbin/mdata-get 'manta_key_id')
   local -r arg_manta_key=$(/native/usr/sbin/mdata-get 'manta_key')
+
+  local -r arg_triton_account_uuid=$(/native/usr/sbin/mdata-get 'sdc:owner_uuid') # see https://eng.joyent.com/mdata/datadict.html
+  local -r arg_triton_region=$(/native/usr/sbin/mdata-get 'sdc:datacenter_name') # see https://eng.joyent.com/mdata/datadict.html
+  local -r arg_address_zookeeper="${arg_cns_service_zookeeper}.svc.${arg_triton_account_uuid}.${arg_triton_region}.cns.joyent.com"
+
   check_arguments \
     ${arg_version_zk_cli} ${arg_version_drill} ${arg_md5_drill} ${arg_version_hadoop_manta} \
     ${arg_name_machine} ${arg_triton_account_uuid} ${arg_triton_region} ${arg_address_zookeeper} \

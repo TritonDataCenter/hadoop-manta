@@ -16,10 +16,6 @@ variable "project_name" {
   description = "The name of this project. This value may be used for naming resources."
 }
 
-variable "triton_account_uuid" {
-  description = "The Triton account UUID."
-}
-
 variable "manta_url" {
   default     = "https://us-east.manta.joyent.com/"
   description = "The URL of the Manta service endpoint."
@@ -40,11 +36,6 @@ variable "manta_key" {
 #
 # Default Variables.
 #
-variable "triton_region" {
-  default     = "us-east-1"
-  description = "The region to provision resources within."
-}
-
 variable "network_name_private" {
   default     = "My-Fabric-Network"
   description = "The network name for private network access.."
@@ -53,11 +44,6 @@ variable "network_name_private" {
 variable "count_drill_workers" {
   default     = "3"
   description = "The number of Drill workers to provision."
-}
-
-variable "key_path_public" {
-  default     = "~/.ssh/id_rsa.pub"
-  description = "Path to the public key to use for connecting to machines."
 }
 
 variable "key_path_private" {
@@ -131,7 +117,6 @@ data "triton_network" "private" {
 locals {
   cns_service_drill     = "drill"
   cns_service_zookeeper = "zookeeper"
-  address_zookeeper     = "${local.cns_service_zookeeper}.svc.${var.triton_account_uuid}.${var.triton_region}.cns.joyent.com"
 
   tag_role_drill     = "${var.project_name}-drill"
   tag_role_zookeeper = "${var.project_name}-zookeeper"
